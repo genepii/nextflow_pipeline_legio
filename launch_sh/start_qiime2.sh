@@ -25,13 +25,13 @@ display_help() {
  	echo "   -i,--input     [path]          folder containing the sequencing data, by default : 
                                                 /srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-{sequencing_ID}" >&2
 	echo "   -w,--work      [path]          folder where all the output files will be written, by default : 
-                                                /srv/scratch/iai/bachcl/result/Legionella/23S-5S/{sequencing_ID}/{analyse_ID}" >&2
+                                                /srv/scratch/iai/bachcl/result/Legionella/23S-5S/{sequencing_ID}/{analyse_ID}_Qiime2" >&2
  	echo "   -m,--tmp       [path]          temporary folder where the input files will be stored, by default : 
                                                 /srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S/{sequencing_ID}" >&2
  	echo "   -s,--save      [path]          folder where the input files will be saved, by default : 
                                                 /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/23S-5S/{sequencing_ID}" >&2
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_ID}" >&2
+                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_ID}_Qiime2" >&2
  	echo "   -pe,--paired   [True/False]    PE (True) or SE (False) Illumina sequencing, by default : True" >&2
  	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : True" >&2
  	echo "   -t,--trim      [True/False]    remove adaptaters and bad quality reads (QPhred < 30), by default : False" >&2
@@ -174,11 +174,11 @@ fi
 if [[ -z "${input_folder}" ]]; then
     input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-${sequencing_id}"
 fi
-output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}"
+output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2"
 save_folder="${save_folder_prefix}/${sequencing_id}"
 tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
-work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}/work"
-result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}"
+work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2/work"
+result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2"
 
 
 ################################################################################
