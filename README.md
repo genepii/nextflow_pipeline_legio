@@ -1,6 +1,16 @@
 # nextflow_pipeline_legio
 A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-related data (CNR des Légionelles).
 
+```
+project/
+├── config/             config files for Nextflow pipelines
+├── data/               data/db for Nextflow pipelines
+├── launch_sh/          bash scripts for launching Nextflow pipelines
+├── modules/            modules files for Nextflow pipelines
+├── scripts/            scripts for modules files
+├── workflows/          Nextflow pipelines
+└── nextflow_25.10.4    Nextflow executable 
+```
 
 ---
 
@@ -55,6 +65,37 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 * `-w, --work` : permanent backup folder for all output files, relevant to dev
 * `-s, --save` : permanent backup folder for input data
 * `-m, --tmp` : temporary backup folder for input data, removed when analysis ended
+
+By default : 
+
+```
+/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/
+├── NGS_results/
+│   └── 23S-5S/
+│       └── <sequencing_id>/
+│           └── <YYYYMMDD>_Qiime2/
+│               └── results files, for User
+│
+├── Raw_fastq/
+│   └── 23S-5S/
+│       └── <sequencing_id>/
+│           └── all input files
+│
+/srv/scratch/iai/bachcl/
+├── Raw_fastq/
+│   └── Legionella/
+│       └── 23S-5S/
+│           └── <sequencing_id>/
+│               └── all input files <== removed when analysis ended
+│
+└── result/
+    └── Legionella/
+        └── 23S-5S/
+            └── <sequencing_id>/
+                └── <YYYYMMDD>_Qiime2/
+                    ├── work/ <== removed when analysis ended
+                    └── all results and created files, for Dev
+```
 
 ###### Sequencing mode
 
