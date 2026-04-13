@@ -18,6 +18,21 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 
 ---
 
+#### Features
+
+* Supports Illumina single-end and paired-end data
+* Quality control and filtering
+* Optional trimming step
+* Automatic QIIME2 data import and setup
+* Taxonomic classification
+* **Builds a custom classifier during execution**
+* Generates QC reports and visual outputs
+* Flexible per-sample or global analysis
+* Produces a summary file listing all software used and their parameters
+* Full execution details available via `--help`
+
+---
+
 #### Run
 
 ```bash
@@ -57,16 +72,4 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 
   * `True` : all samples together
   * `False` : samples processed separately
-
----
-
-#### Features
-
-* Supports Illumina single-end and paired-end data
-* Quality control and filtering
-* Optional trimming step
-* QIIME2 import and data setup
-* Taxonomic classification
-* QC reports and visual outputs
-* Flexible per-sample or global analysis
 

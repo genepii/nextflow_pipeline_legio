@@ -1,8 +1,5 @@
 #!/usr/bin/env nextflow
 
-// Test
-// ./nextflow /home/chu-lyon.fr/peticcaau/Tmp_HCL/nextflow_pipeline_legio/workflows/workflow_qiime2.nf -c /home/chu-lyon.fr/peticcaau/Tmp_HCL/nextflow_pipeline_legio/config/qiime2.config -profile test
-    
 // enable dsl2
 nextflow.enable.dsl=2
 
