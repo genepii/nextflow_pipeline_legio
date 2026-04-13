@@ -43,17 +43,18 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 
 #### Required
 
-* `-d, --seq_id` : sequencing run ID
+* `-d, --seq_id` : sequencing run ID (ex: for 
+"Legionella-Amplicons-20260331", run_ID = 20260331)
 
 #### Options
 
 ###### Input / Output
 
-* `-i, --input` : input folder (raw data)
-* `-o, --output` : output folder
-* `-s, --save` : save folder
-* `-m, --tmp` : temporary folder
-* `-w, --work` : Nextflow work directory
+* `-i, --input` : path to the folder containing the raw data (Illumina sequencing)
+* `-o, --output` : folder for results files, relevant to user 
+* `-w, --work` : permanent backup folder for all output files, relevant to dev
+* `-s, --save` : permanent backup folder for input data
+* `-m, --tmp` : temporary backup folder for input data, removed when analysis ended
 
 ###### Sequencing mode
 
