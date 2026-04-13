@@ -74,19 +74,19 @@ By default :
 │   └── 23S-5S/
 │       └── <sequencing_id>/
 │           └── <YYYYMMDD>_Qiime2/
-│               └── results files, for User
+│               └── results files, for User [--output]
 │
 ├── Raw_fastq/
 │   └── 23S-5S/
 │       └── <sequencing_id>/
-│           └── all input files
+│           └── all input files [--save]
 │
 /srv/scratch/iai/bachcl/
 ├── Raw_fastq/
 │   └── Legionella/
 │       └── 23S-5S/
 │           └── <sequencing_id>/
-│               └── all input files <== removed when analysis ended
+│               └── all input files [--tmp] <== removed when analysis ended
 │
 └── result/
     └── Legionella/
@@ -94,7 +94,7 @@ By default :
             └── <sequencing_id>/
                 └── <YYYYMMDD>_Qiime2/
                     ├── work/ <== removed when analysis ended
-                    └── all results and created files, for Dev
+                    └── all results and created files, for Dev  [--work]
 ```
 
 ###### Sequencing mode
