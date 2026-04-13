@@ -231,7 +231,7 @@ k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     run "${pipeline_file}"  \
     --suffix "${sequencing_id}" \
     --input_dir "${tmp_folder}" \
-    --workDir "${work_folder}" \
+    -w "${work_folder}" \
     --result "${result_folder}" \
     --paired_end "${paired_end}" \
     --all_in_one "${all_in_one}" \
