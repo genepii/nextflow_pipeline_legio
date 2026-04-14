@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: quay.io/biocontainers/vsearch:2.30.6--h6a68c12_0
+From: quay.io/biocontainers/vsearch:2.30.6--h0bb26bb_0
 
 %labels
     Author nextflow_pipeline_legio
