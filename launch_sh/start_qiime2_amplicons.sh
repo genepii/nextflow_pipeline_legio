@@ -2,13 +2,14 @@
 
 ################################################################################
 #                                                                              #
-# start_qiime2.sh version 1                                                    #
+# start_qiime2_amplicons.sh version 1                                          #
 #                                                                              #
 # Aurelie PETICCA, last update: 2026-04                                        #
+# Christophe GINEVRA, Camille JACQUELINE                                       #
 #                                                                              #
-# Aim: Launch for Qiime2 nextflow pipeline                                     #
+# Aim: Launch for Qiime2 Amplicons nextflow pipeline                           #
 #                                                                              #
-# Usage:  start_qiime2.sh sequencing_ID [options]                              #
+# Usage:  start_qiime2_amplicons.sh sequencing_ID [options]                    #
 #                                                                              #
 ################################################################################
 
@@ -185,8 +186,8 @@ result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2"
 # start script
 ## Variables for launching nextflow
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-config_file="${script_dir}/../config/qiime2.config"
-pipeline_file="${script_dir}/../workflows/workflow_qiime2.nf"
+config_file="${script_dir}/../config/qiime2_amplicons.config"
+pipeline_file="${script_dir}/../workflow_qiime2_amplicons.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
 echo "START -----------------------------------------------------------------------------------------------------------------"
@@ -216,7 +217,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ## Start Qiime2 analysis
-echo "--- QIIME2 ANALYSIS STARTING ----------------------------------------------------------------------------------------------"
+echo "--- QIIME2 AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 

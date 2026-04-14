@@ -1,26 +1,27 @@
-# nextflow_pipeline_legio
+# Tmp_HCL
+
 A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-related data (CNR des Légionelles).
 
 ```
 project/
+├── assets/             static data (data/db/etc.) for Nextflow pipelines
+├── bin/                scripts for modules files
 ├── config/             config files for Nextflow pipelines
-├── data/               data/db for Nextflow pipelines
 ├── launch_sh/          bash scripts for launching Nextflow pipelines
 ├── modules/            modules files for Nextflow pipelines
-├── scripts/            scripts for modules files
-├── workflows/          Nextflow pipelines
-└── nextflow_25.10.4    Nextflow executable 
+├── nextflow_25.10.4    Nextflow executable 
+└── workflows_*         Nextflow main workflows
 ```
 
 ---
 
-- [Nextflow Pipeline Legionelles](#nextflow_pipeline_legio)
-  - [QIIME2 Pipeline](#qiime2-pipeline-nextflow)
+- [TMP_HCL](#tmp_hcl)
+  - [QIIME2 Amplicons Pipeline](#qiime2-amplicons-pipeline-nextflow)
 
 
 ---
 
-## QIIME2 Pipeline (Nextflow)
+## QIIME2 Amplicons Pipeline (Nextflow)
 
 #### Description
 This pipeline analyzes Illumina amplicon sequencing data using QIIME2 and Nextflow.  
@@ -46,7 +47,7 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 #### Run
 
 ```bash
-./launch_sh/start_qiime2.sh -d <seq_id> [options]
+./launch_sh/start_qiime2_amplicons.sh -d <seq_id> [options]
 ```
 
 ---
@@ -94,7 +95,7 @@ By default :
             └── <sequencing_id>/
                 └── <YYYYMMDD>_Qiime2/
                     ├── work/ <== removed when analysis ended
-                    └── all results and created files, for Dev  [--work]
+                    └── all results and created files, for Dev [--work]
 ```
 
 ###### Sequencing mode

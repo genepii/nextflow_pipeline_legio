@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// Processes for qiime2_workflow.nf
+// Processes for workflow_qiime2_amplicons.nf
 
 
 // -----------------------------------------------------------------------------
@@ -533,97 +533,97 @@ process create_info {
 
     script:
     """
-    CONFIG_FILE="pipeline_${params.suffix}.txt"
+    sofrware_track_file="pipeline_${params.suffix}.txt"
 
-    echo "QIIME2 ANALYSIS CONFIGURATION" > \$CONFIG_FILE
-    echo "" >> \$CONFIG_FILE
+    echo "QIIME2 - AMPLICONS ANALYSIS CONFIGURATION" > \$sofrware_track_file
+    echo "" >> \$sofrware_track_file
 
-    echo "Generated: \$(date '+%d/%m/%Y %H:%M:%S')" >> \$CONFIG_FILE
-    echo "" >> \$CONFIG_FILE
+    echo "Generated: \$(date '+%d/%m/%Y %H:%M:%S')" >> \$sofrware_track_file
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # General settings
     # -------------------------
-    echo "GENERAL SETTINGS" >> \$CONFIG_FILE
-    echo "Input folder  : ${input_dir}" >> \$CONFIG_FILE
-    echo "Output folder : ${result_dir}" >> \$CONFIG_FILE
-    echo "Suffix        : ${suffix}" >> \$CONFIG_FILE
-    echo "" >> \$CONFIG_FILE
+    echo "GENERAL SETTINGS" >> \$sofrware_track_file
+    echo "Input folder  : ${input_dir}" >> \$sofrware_track_file
+    echo "Output folder : ${result_dir}" >> \$sofrware_track_file
+    echo "Suffix        : ${suffix}" >> \$sofrware_track_file
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # Data type
     # -------------------------
-    echo "ANALYSIS STRATEGY" >> \$CONFIG_FILE
+    echo "ANALYSIS STRATEGY" >> \$sofrware_track_file
 
     if [ "${paired_end}" = true ]; then
-        echo "Sequencing type : Paired-end (PE)" >> \$CONFIG_FILE
+        echo "Sequencing type : Paired-end (PE)" >> \$sofrware_track_file
     else
-        echo "Sequencing type : Single-end (SE)" >> \$CONFIG_FILE
+        echo "Sequencing type : Single-end (SE)" >> \$sofrware_track_file
     fi
 
     if [ "${all_in_one}" = true ]; then
-        echo "Sample handling : All samples processed together" >> \$CONFIG_FILE
+        echo "Sample handling : All samples processed together" >> \$sofrware_track_file
     else
-        echo "Sample handling : Samples processed separately" >> \$CONFIG_FILE
+        echo "Sample handling : Samples processed separately" >> \$sofrware_track_file
     fi
 
     if [ "${trimming}" = true ]; then
-        echo "Trimming        : Enabled" >> \$CONFIG_FILE
+        echo "Trimming        : Enabled" >> \$sofrware_track_file
     else
-        echo "Trimming        : Disabled" >> \$CONFIG_FILE
+        echo "Trimming        : Disabled" >> \$sofrware_track_file
     fi
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # Trimming parameters
     # -------------------------
-    echo "CUTADAPT DATA TRIMMING" >> \$CONFIG_FILE
-    echo "Phred Score Qual. : ${min_quality}" >> \$CONFIG_FILE
-    echo "Length min        : ${min_length}" >> \$CONFIG_FILE
+    echo "CUTADAPT DATA TRIMMING" >> \$sofrware_track_file
+    echo "Phred Score Qual. : ${min_quality}" >> \$sofrware_track_file
+    echo "Length min        : ${min_length}" >> \$sofrware_track_file
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # DADA2 parameters
     # -------------------------
-    echo "DADA2 DENOISING PARAMETERS" >> \$CONFIG_FILE
-    echo "Trim left forward : ${trim_left_f} (not used if 0)" >> \$CONFIG_FILE
-    echo "Trim left reverse : ${trim_left_r} (not used if 0)" >> \$CONFIG_FILE
-    echo "Trunc length F    : ${trunc_len_f}" >> \$CONFIG_FILE
-    echo "Trunc length R    : ${trunc_len_r}" >> \$CONFIG_FILE
-    echo "Threads           : ${n_threads}" >> \$CONFIG_FILE
-    echo "Reads for model   : ${reads_learn}" >> \$CONFIG_FILE
-    echo "Fold parents      : ${fold_parents}" >> \$CONFIG_FILE
+    echo "DADA2 DENOISING PARAMETERS" >> \$sofrware_track_file
+    echo "Trim left forward : ${trim_left_f} (not used if 0)" >> \$sofrware_track_file
+    echo "Trim left reverse : ${trim_left_r} (not used if 0)" >> \$sofrware_track_file
+    echo "Trunc length F    : ${trunc_len_f}" >> \$sofrware_track_file
+    echo "Trunc length R    : ${trunc_len_r}" >> \$sofrware_track_file
+    echo "Threads           : ${n_threads}" >> \$sofrware_track_file
+    echo "Reads for model   : ${reads_learn}" >> \$sofrware_track_file
+    echo "Fold parents      : ${fold_parents}" >> \$sofrware_track_file
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # Classifier training
     # -------------------------
-    echo "CLASSIFIER TRAINING" >> \$CONFIG_FILE
-    echo "Database          : ${db}" >> \$CONFIG_FILE
-    echo "Reference reads   : ${reads}" >> \$CONFIG_FILE
-    echo "Taxonomy file     : ${taxa}" >> \$CONFIG_FILE
+    echo "CLASSIFIER TRAINING" >> \$sofrware_track_file
+    echo "Database          : ${db}" >> \$sofrware_track_file
+    echo "Reference reads   : ${reads}" >> \$sofrware_track_file
+    echo "Taxonomy file     : ${taxa}" >> \$sofrware_track_file
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
 
     # -------------------------
     # Taxonomic classification
     # -------------------------
-    echo "TAXONOMIC CLASSIFICATION" >> \$CONFIG_FILE
-    echo "Confidence threshold : ${confidence}" >> \$CONFIG_FILE
-    echo "Number of jobs       : ${n_jobs}" >> \$CONFIG_FILE
+    echo "TAXONOMIC CLASSIFICATION" >> \$sofrware_track_file
+    echo "Confidence threshold : ${confidence}" >> \$sofrware_track_file
+    echo "Number of jobs       : ${n_jobs}" >> \$sofrware_track_file
 
-    echo "" >> \$CONFIG_FILE
-    echo "CONFIGURATION COMPLETE" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
+    echo "CONFIGURATION COMPLETE" >> \$sofrware_track_file
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
     echo "--------------------------------------------------------------------------------" \
-        >> \$CONFIG_FILE
+        >> \$sofrware_track_file
 
-    echo "SOFTWARES VERSION" >> \$CONFIG_FILE
-    echo "" >> \$CONFIG_FILE
+    echo "SOFTWARES VERSION" >> \$sofrware_track_file
+    echo "" >> \$sofrware_track_file
     """
 }
 
@@ -638,16 +638,16 @@ process qiime_info {
 
     script:
     """
-    CONFIG_FILE="qiime_${params.suffix}.txt"
-    cat $file > \$CONFIG_FILE
+    sofrware_track_file="qiime_${params.suffix}.txt"
+    cat $file > \$sofrware_track_file
 
-    echo "QIIME2" >> \$CONFIG_FILE
-    qiime info >> \$CONFIG_FILE || true
+    echo "QIIME2" >> \$sofrware_track_file
+    qiime info >> \$sofrware_track_file || true
 
-    echo "" >> \$CONFIG_FILE
+    echo "" >> \$sofrware_track_file
 
-    echo "KRONA VERSION" >> \$CONFIG_FILE
-    qiime krona --version >> \$CONFIG_FILE
+    echo "KRONA VERSION" >> \$sofrware_track_file
+    qiime krona --version >> \$sofrware_track_file
     """
 }
 
@@ -662,13 +662,13 @@ process cutadapt_info {
 
     script:
     """
-    CONFIG_FILE="cutadapt_${params.suffix}.txt"
-    cat $file > \$CONFIG_FILE
+    sofrware_track_file="cutadapt_${params.suffix}.txt"
+    cat $file > \$sofrware_track_file
 
     if [ "${params.trimming}" = "true" ]; then
-        echo "" >> \$CONFIG_FILE
-        echo "CUTADAPT" >> \$CONFIG_FILE
-        cutadapt --version >> \$CONFIG_FILE
+        echo "" >> \$sofrware_track_file
+        echo "CUTADAPT" >> \$sofrware_track_file
+        cutadapt --version >> \$sofrware_track_file
     fi
     """
 }
@@ -685,7 +685,7 @@ process publish_info {
 
     script:
     """
-    CONFIG_FILE="config_${params.suffix}.txt"
-    cat $file > \$CONFIG_FILE
+    sofrware_track_file="config_${params.suffix}.txt"
+    cat $file > \$sofrware_track_file
     """
 }
