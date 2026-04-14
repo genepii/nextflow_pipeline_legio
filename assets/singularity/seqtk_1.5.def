@@ -1,0 +1,37 @@
+Bootstrap: docker
+From: debian:stable-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Version seqtk 1.5-r133
+    Build reproducible true
+
+%help
+    Seqtk toolkit for FASTA/FASTQ processing.
+
+%post
+    apt-get update && apt-get install -y \
+        gcc \
+        make \
+        zlib1g-dev \
+        wget \
+        && rm -rf /var/lib/apt/lists/*
+
+    cd /opt
+    wget https://github.com/lh3/seqtk/archive/refs/tags/v1.5.tar.gz
+    tar -xzf v1.5.tar.gz
+    cd seqtk-1.5
+    make
+
+    ln -s /opt/seqtk-1.5/seqtk /usr/local/bin/seqtk
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec "$@"
+
+%test
+    seqtk 2>&1 | head -n 3

@@ -1,0 +1,36 @@
+Bootstrap: docker
+From: eclipse-temurin:17-jre-jammy
+
+%labels
+    Author nextflow_pipeline_legio
+    Version BBTools 39.81
+    Build reproducible true
+
+%help
+    BBTools suite (bbduk, bbmap, reformat, etc.)
+
+%post
+    apt-get update && apt-get install -y \
+        wget \
+        unzip \
+        pigz \
+        && rm -rf /var/lib/apt/lists/*
+
+    cd /opt
+    wget https://github.com/bbushnell/BBTools/archive/refs/tags/v39.81.zip
+    unzip v39.81.zip
+    mv BBTools-39.81 bbtools
+    rm v39.81.zip
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export BBMAP_HOME=/opt/bbtools
+    export PATH=/opt/bbtools:$PATH
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec "$@"
+
+%test
+    bbduk.sh --version

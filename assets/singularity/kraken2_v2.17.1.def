@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: quay.io/biocontainers/kraken2:2.17.1--pl5321h077b44d_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Version Kraken2 2.17.1
+    Build reproducible true
+    Source biocontainers
+
+%help
+    Kraken2 taxonomic classification tool (prebuilt Biocontainers image).
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export KRAKEN2_DIR=/usr/local
+    export PATH=/usr/local/bin:$PATH
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec "$@"
+
+%test
+    kraken2 --version

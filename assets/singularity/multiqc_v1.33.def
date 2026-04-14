@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Version MultiQC 1.33
+    Build reproducible true
+
+%help
+    MultiQC aggregates results from bioinformatics analyses into a single report.
+
+%post
+    apt-get update && apt-get install -y \
+        gcc \
+        python3-dev \
+        libexpat1 \
+        && rm -rf /var/lib/apt/lists/*
+
+    pip install --no-cache-dir multiqc==1.33
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec multiqc "$@"
+
+%test
+    multiqc --version

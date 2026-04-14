@@ -1,0 +1,42 @@
+Bootstrap: docker
+From: continuumio/miniconda3:latest   # Minimal Conda base
+
+%post
+    set -e
+
+    export PATH=/opt/conda/bin:$PATH
+
+    # Install mamba (faster dependency resolution)
+    conda install -y -c conda-forge mamba
+
+    # Create environment with pinned versions
+    mamba create -y -n cutadapt-env \
+        -c conda-forge -c bioconda \
+        python=3.11 \
+        cutadapt=5.2
+
+    # Activate environment (POSIX-compatible shell)
+    . /opt/conda/etc/profile.d/conda.sh
+    conda activate cutadapt-env
+
+    # Verify installation
+    cutadapt --version
+
+    # Clean caches to reduce image size
+    conda clean -afy
+
+%environment
+    export PATH=/opt/conda/bin:$PATH
+
+    # Redirect caches to avoid write issues on HPC (read-only $HOME)
+    export MPLCONFIGDIR=/tmp
+    export XDG_CACHE_HOME=/tmp
+    export NUMBA_CACHE_DIR=/tmp
+    export TMPDIR=/tmp
+
+    # Activate environment at runtime
+    . /opt/conda/etc/profile.d/conda.sh
+    conda activate cutadapt-env
+
+%runscript
+    exec cutadapt "$@"
