@@ -1,4 +1,4 @@
-# Tmp_HCL
+# nextflow_pipeline_legio
 
 A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-related data (CNR des Légionelles).
 
@@ -15,7 +15,7 @@ project/
 
 ---
 
-- [TMP_HCL](#tmp_hcl)
+- [Nextflow Pipeline Legionelles](#nextflow_pipeline_legio)
   - [QIIME2 Amplicons Pipeline](#qiime2-amplicons-pipeline-nextflow)
 
 
