@@ -66,9 +66,9 @@ It supports single-end and paired-end data, optional trimming, and two analysis 
 * `-s, --save` : permanent backup folder for input data
 * `-m, --tmp` : temporary backup folder for input data, removed when analysis ended
 
+```
 By default : 
 
-```
 /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/
 ├── NGS_results/
 │   └── 23S-5S/
