@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: quay.io/biocontainers/vsearch:2.30.6--h6a68c12_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Version vsearch 2.30.6
+    Build reproducible true
+
+%help
+    Singularity image for sequence clustering and chimera detection (vsearch).
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec vsearch "$@"
+
+%test
+    vsearch --version

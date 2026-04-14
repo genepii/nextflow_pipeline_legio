@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: rocker/r-ver:4.5.3
+
+%labels
+    Author nextflow_pipeline_legio
+    Version R 4.5.3 + ggplot2 + dplyr
+    Build reproducible true
+
+%help
+    R environment with ggplot2 and dplyr installed.
+
+%post
+    apt-get update && apt-get install -y \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        libxml2-dev \
+        libfontconfig1-dev \
+        && rm -rf /var/lib/apt/lists/*
+
+    R -e "install.packages(c('ggplot2','dplyr'), repos='https://cloud.r-project.org')"
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    exec R "$@"
+
+%test
+    R --version

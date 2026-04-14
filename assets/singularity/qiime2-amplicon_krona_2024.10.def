@@ -1,6 +1,11 @@
 Bootstrap: docker
 From: continuumio/miniconda3:latest   # Base image with minimal Conda installation
 
+%labels
+    Author nextflow_pipeline_legio
+    Version QIIME2-amplicons 2024.10 and Krona  
+    Build reproducible true
+
 %post
     set -e                            # Stop build on error
 

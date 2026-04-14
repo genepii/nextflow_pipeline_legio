@@ -1,0 +1,23 @@
+Bootstrap: docker
+From: ncbi/blast:2.17.0
+
+%labels
+    Author nextflow_pipeline_legio
+    Version BLAST+ 2.17.0
+    Build reproducible true
+
+%help
+    Singularity image containing NCBI BLAST+ 2.17.0 tools:
+    blastn, blastp, makeblastdb, blastx, etc.
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PATH=/usr/local/ncbi/blast/bin:$PATH
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec "$@"
+
+%test
+    blastn -version

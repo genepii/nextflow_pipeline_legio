@@ -1,6 +1,11 @@
 Bootstrap: docker
 From: continuumio/miniconda3:latest   # Minimal Conda base
 
+%labels
+    Author nextflow_pipeline_legio
+    Version Python 3.11 and Cutadapt 5.2
+    Build reproducible true
+
 %post
     set -e
 
