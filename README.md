@@ -74,26 +74,26 @@ By default :
 ├── NGS_results/
 │   └── 23S-5S/
 │       └── <sequencing_id>/
-│           └── <YYYYMMDD>_Qiime2/
+│           └── <YYYYMMDD>_Qiime2-amplicons/
 │               └── results files, for User [--output]
 │
 ├── Raw_fastq/
 │   └── 23S-5S/
 │       └── <sequencing_id>/
-│           └── all input files [--save]
+│           └── all input files [--save] <== not touched after data saving
 │
 /srv/scratch/iai/bachcl/
 ├── Raw_fastq/
 │   └── Legionella/
 │       └── 23S-5S/
 │           └── <sequencing_id>/
-│               └── all input files [--tmp] <== removed when analysis ended
+│               └── all input files [--tmp] <== used during analysis and removed when ended
 │
 └── result/
     └── Legionella/
         └── 23S-5S/
             └── <sequencing_id>/
-                └── <YYYYMMDD>_Qiime2/
+                └── <YYYYMMDD>_Qiime2-amplicons/
                     ├── work/ <== removed when analysis ended
                     └── all results and created files, for Dev [--work]
 ```
