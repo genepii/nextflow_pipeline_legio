@@ -11,7 +11,7 @@ nextflow.enable.dsl=2
 * Output  : Naive Bayes classifier
 * Purpose : adapt the classifier to the data (local issue)
 */
-process import_refseq {
+process IMPORT_REFSEQ {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -30,7 +30,7 @@ process import_refseq {
     """
 }
 
-process import_taxa {
+process IMPORT_TAXA {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -50,7 +50,7 @@ process import_taxa {
     """
 }
 
-process generate_classifier_bayes {
+process GENERATE_CLASSIFIER_BAYES {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -77,7 +77,7 @@ process generate_classifier_bayes {
 * Output  : tuples with sample_id, Illumina R1 and R2 (optionnal)
 * Purpose : generate cleaned dataset for Qiime2 analysis
 */
-process trimming_cutadapt {
+process TRIMMING_CUTADAPT {
     label 'cutadapt'
     publishDir "${params.result}", mode: 'copy'
 
@@ -115,6 +115,7 @@ process trimming_cutadapt {
 
     """
     cutadapt \
+        -j ${task.cpus} \
         ${adapter} \
         ${quality} \
         ${minlen} \
@@ -131,7 +132,7 @@ process trimming_cutadapt {
 * Purpose : generate input for QIIME2 import
 * Note    : FastqManifestPhred33V2 manifest
 */
-process generate_manifest {
+process GENERATE_MANIFEST {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -160,7 +161,7 @@ process generate_manifest {
 * Purpose : generate input for QIIME2 import
 * Note    : FastqManifestPhred33V2 manifest
 */
-process generate_manifest_all {
+process GENERATE_MANIFEST_ALL {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -190,7 +191,7 @@ process generate_manifest_all {
 * Output  : QIIME2 artifact (.qza)
 * Purpose : prepare data for denoising
 */
-process import_manifest {
+process IMPORT_MANIFEST {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -222,7 +223,7 @@ process import_manifest {
 * Output  : plot .qzv with information about Qiime2 demultiplexing
 * Purpose : generate quality plots (QC analysis)
 */
-process qc_demux {
+process QC_DEMUX {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -247,7 +248,7 @@ process qc_demux {
 * Output  : feature table and representative sequences (.qza)
 * Purpose : denoise and generate ASVs
 */
-process denoise_dada2 {
+process DENOISE_DADA2 {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -292,7 +293,7 @@ process denoise_dada2 {
 * Output  : three types of visualisation (qzv)
 * Purpose : generate quality plots (QC analysis)
 */
-process qc_dada2_meta {
+process QC_DADA2_META {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -310,7 +311,7 @@ process qc_dada2_meta {
     """
 }
 
-process qc_dada2_table {
+process QC_DADA2_TABLE {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -328,7 +329,7 @@ process qc_dada2_table {
     """
 }
 
-process qc_dada2_rep {
+process QC_DADA2_REP {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -353,7 +354,7 @@ process qc_dada2_rep {
 * Output  : taxonomy artifact
 * Purpose : assign taxonomy using pre-trained classifier
 */
-process taxa_classification {
+process TAXA_CLASSIFICATION {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -367,7 +368,7 @@ process taxa_classification {
     script:
     """
     qiime feature-classifier classify-sklearn \
-        --p-n-jobs ${params.n_jobs} \
+        --p-n-jobs ${task.cpus} \
         --p-confidence ${params.confidence} \
         --i-classifier ${classifier} \
         --i-reads ${rep_dada2} \
@@ -381,7 +382,7 @@ process taxa_classification {
 * Output  : taxonomy artifact
 * Purpose : focus on the taxa of interest
 */
-process taxa_filtering {
+process TAXA_FILTERING {
     label 'qiime'
     publishDir "${params.result}/dev", mode: 'copy'
 
@@ -407,7 +408,7 @@ process taxa_filtering {
 * Output  : visualisation (qzv), barplot or krona
 * Purpose : generate quality plots (QC analysis)
 */
-process qc_init_classification {
+process QC_INIT_CLASSIFICATION {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -428,7 +429,7 @@ process qc_init_classification {
     """
 }
 
-process qc_filtered_classification {
+process QC_FILTERED_CLASSIFICATION {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -449,7 +450,7 @@ process qc_filtered_classification {
     """
 }
 
-process krona_init_classification {
+process KRONA_INIT_CLASSIFICATION {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -470,7 +471,7 @@ process krona_init_classification {
     """
 }
 
-process krona_filtered_classification {
+process KRONA_FILT_CLASSIFICATION {
     label 'qiime'
     publishDir params.result, mode: 'copy'
 
@@ -494,11 +495,11 @@ process krona_filtered_classification {
 // -----------------------------------------------------------------------------
 /*
 * Information about Software used for analysis
-* Input   : none
+* Input   : all params.values
 * Output  : software version (txt)
 * Purpose : save the information about software version
 */
-process create_info {
+process CREATE_INFO {
     label 'qiime'
 
     input:
@@ -529,105 +530,35 @@ process create_info {
         val n_jobs
 
     output:
-        path "pipeline_${params.suffix}.txt"
+        path "pipeline_${suffix}.txt"
 
     script:
     """
-    sofrware_track_file="pipeline_${params.suffix}.txt"
-
-    echo "QIIME2 - AMPLICONS ANALYSIS CONFIGURATION" > \$sofrware_track_file
-    echo "" >> \$sofrware_track_file
-
-    echo "Generated: \$(date '+%d/%m/%Y %H:%M:%S')" >> \$sofrware_track_file
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # General settings
-    # -------------------------
-    echo "GENERAL SETTINGS" >> \$sofrware_track_file
-    echo "Input folder  : ${input_dir}" >> \$sofrware_track_file
-    echo "Output folder : ${result_dir}" >> \$sofrware_track_file
-    echo "Suffix        : ${suffix}" >> \$sofrware_track_file
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # Data type
-    # -------------------------
-    echo "ANALYSIS STRATEGY" >> \$sofrware_track_file
-
-    if [ "${paired_end}" = true ]; then
-        echo "Sequencing type : Paired-end (PE)" >> \$sofrware_track_file
-    else
-        echo "Sequencing type : Single-end (SE)" >> \$sofrware_track_file
-    fi
-
-    if [ "${all_in_one}" = true ]; then
-        echo "Sample handling : All samples processed together" >> \$sofrware_track_file
-    else
-        echo "Sample handling : Samples processed separately" >> \$sofrware_track_file
-    fi
-
-    if [ "${trimming}" = true ]; then
-        echo "Trimming        : Enabled" >> \$sofrware_track_file
-    else
-        echo "Trimming        : Disabled" >> \$sofrware_track_file
-    fi
-
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # Trimming parameters
-    # -------------------------
-    echo "CUTADAPT DATA TRIMMING" >> \$sofrware_track_file
-    echo "Phred Score Qual. : ${min_quality}" >> \$sofrware_track_file
-    echo "Length min        : ${min_length}" >> \$sofrware_track_file
-
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # DADA2 parameters
-    # -------------------------
-    echo "DADA2 DENOISING PARAMETERS" >> \$sofrware_track_file
-    echo "Trim left forward : ${trim_left_f} (not used if 0)" >> \$sofrware_track_file
-    echo "Trim left reverse : ${trim_left_r} (not used if 0)" >> \$sofrware_track_file
-    echo "Trunc length F    : ${trunc_len_f}" >> \$sofrware_track_file
-    echo "Trunc length R    : ${trunc_len_r}" >> \$sofrware_track_file
-    echo "Threads           : ${n_threads}" >> \$sofrware_track_file
-    echo "Reads for model   : ${reads_learn}" >> \$sofrware_track_file
-    echo "Fold parents      : ${fold_parents}" >> \$sofrware_track_file
-
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # Classifier training
-    # -------------------------
-    echo "CLASSIFIER TRAINING" >> \$sofrware_track_file
-    echo "Database          : ${db}" >> \$sofrware_track_file
-    echo "Reference reads   : ${reads}" >> \$sofrware_track_file
-    echo "Taxonomy file     : ${taxa}" >> \$sofrware_track_file
-
-    echo "" >> \$sofrware_track_file
-
-    # -------------------------
-    # Taxonomic classification
-    # -------------------------
-    echo "TAXONOMIC CLASSIFICATION" >> \$sofrware_track_file
-    echo "Confidence threshold : ${confidence}" >> \$sofrware_track_file
-    echo "Number of jobs       : ${n_jobs}" >> \$sofrware_track_file
-
-    echo "" >> \$sofrware_track_file
-    echo "CONFIGURATION COMPLETE" >> \$sofrware_track_file
-
-    echo "" >> \$sofrware_track_file
-    echo "--------------------------------------------------------------------------------" \
-        >> \$sofrware_track_file
-
-    echo "SOFTWARES VERSION" >> \$sofrware_track_file
-    echo "" >> \$sofrware_track_file
+    qiime2_amplicons_create_info.sh \
+        "${input_dir}" \
+        "${result_dir}" \
+        "${suffix}" \
+        "${paired_end}" \
+        "${all_in_one}" \
+        "${trimming}" \
+        "${min_quality}" \
+        "${min_length}" \
+        "${trim_left_f}" \
+        "${trim_left_r}" \
+        "${trunc_len_f}" \
+        "${trunc_len_r}" \
+        "${n_threads}" \
+        "${reads_learn}" \
+        "${fold_parents}" \
+        "${db}" \
+        "${reads}" \
+        "${taxa}" \
+        "${confidence}" \
+        "${n_jobs}"
     """
 }
 
-process qiime_info {
+process QIIME_INFO {
     label 'qiime'
 
     input:
@@ -638,20 +569,20 @@ process qiime_info {
 
     script:
     """
-    sofrware_track_file="qiime_${params.suffix}.txt"
-    cat $file > \$sofrware_track_file
+    software_track_file="qiime_${params.suffix}.txt"
+    cat $file > \$software_track_file
 
-    echo "QIIME2" >> \$sofrware_track_file
-    qiime info >> \$sofrware_track_file || true
+    echo "QIIME2" >> \$software_track_file
+    qiime info >> \$software_track_file || true
 
-    echo "" >> \$sofrware_track_file
+    echo "" >> \$software_track_file
 
-    echo "KRONA VERSION" >> \$sofrware_track_file
-    qiime krona --version >> \$sofrware_track_file
+    echo "KRONA VERSION" >> \$software_track_file
+    qiime krona --version >> \$software_track_file
     """
 }
 
-process cutadapt_info {
+process CUTADAPT_INFO {
     label 'cutadapt'
 
     input:
@@ -662,18 +593,18 @@ process cutadapt_info {
 
     script:
     """
-    sofrware_track_file="cutadapt_${params.suffix}.txt"
-    cat $file > \$sofrware_track_file
+    software_track_file="cutadapt_${params.suffix}.txt"
+    cat $file > \$software_track_file
 
     if [ "${params.trimming}" = "true" ]; then
-        echo "" >> \$sofrware_track_file
-        echo "CUTADAPT" >> \$sofrware_track_file
-        cutadapt --version >> \$sofrware_track_file
+        echo "" >> \$software_track_file
+        echo "CUTADAPT" >> \$software_track_file
+        cutadapt --version >> \$software_track_file
     fi
     """
 }
 
-process publish_info {
+process PUBLISH_INFO {
     label 'qiime'
     publishDir "${params.result}", mode: 'copy'
 
@@ -685,7 +616,7 @@ process publish_info {
 
     script:
     """
-    sofrware_track_file="config_${params.suffix}.txt"
-    cat $file > \$sofrware_track_file
+    software_track_file="config_${params.suffix}.txt"
+    cat $file > \$software_track_file
     """
 }
