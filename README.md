@@ -15,9 +15,11 @@ project/
 
 ---
 
+# Table of contents
+
 - [Nextflow Pipeline Legionelles](#nextflow_pipeline_legio)
   - [QIIME2 Amplicons Pipeline](#qiime2-amplicons-pipeline-nextflow)
-
+    
 
 ---
 
@@ -25,21 +27,21 @@ project/
 
 #### Description
 This pipeline analyzes Illumina amplicon sequencing data using QIIME2 and Nextflow.  
-It supports single-end and paired-end data, optional trimming, and two analysis modes: all samples together or separately.
+It supports single-end and paired-end data, optional adapters trimming, and two analysis modes: all samples together or separately.
 
 ---
 
 #### Features
 
 * Supports Illumina single-end and paired-end data
-* Quality control and filtering
-* Optional trimming step
+* Quality control and filtering (QPhred and minimum length)
+  * Optional adapters trimming step
 * Automatic QIIME2 data import and setup
 * Taxonomic classification
-* **Builds a custom classifier during execution**
-* Generates QC reports and visual outputs
+* **Builds a custom classifier** if not in `assets/qiime_amplicons/`
+* Generates FastQC reports and visual outputs (Krona, Barplot)
 * Flexible per-sample or global analysis
-* Produces a summary file listing all software used and their parameters
+* Produces a summary file listing all software used and their parameters (softwaresTrackfile)
 * Full execution details available via `--help`
 
 ---
@@ -80,7 +82,7 @@ By default :
 ├── Raw_fastq/
 │   └── 23S-5S/
 │       └── <sequencing_id>/
-│           └── all input files [--save] <== not touched after data saving
+│           └── all input files [--save] <== not touched, only for data saving
 │
 /srv/scratch/iai/bachcl/
 ├── Raw_fastq/
@@ -104,10 +106,10 @@ By default :
 
 ###### Preprocessing
 
-* `-t, --trim` : enable trimming (`True/False`)
+* `-t, --adapters` : enable adaptaters trimming (`True/False`)
 
-  * removes adapters
-  * filters low-quality reads (Phred < 30)
+  * `True` : add adapters trimming during trimming step 
+  * `False` : removes only bad quality reads (QPhred and minimum length)
 
 ###### Analysis mode
 
@@ -116,3 +118,6 @@ By default :
   * `True` : all samples together
   * `False` : samples processed separately
 
+###### Help to developpers
+
+* `-c, --config` : path to a new nextflow config file, for developping new parameters
