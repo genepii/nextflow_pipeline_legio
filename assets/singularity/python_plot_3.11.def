@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: python:3.11.9-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool Python plotting
+    Version 3.11.9 + pinned libs
+    Build reproducible true
+
+%environment
+    export PYTHONUNBUFFERED=1
+    export LC_ALL=C
+    export LANG=C
+
+%post
+    pip install --no-cache-dir \
+        pandas==2.2.2 \
+        matplotlib==3.9.0 \
+        numpy==1.26.4
+
+%runscript
+    exec "$@"
+
+%test
+    python3 --version

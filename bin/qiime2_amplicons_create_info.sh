@@ -15,7 +15,7 @@ suffix="$3"
 
 paired_end="$4"
 all_in_one="$5"
-trimming="$6"
+adapters="$6"
 
 min_quality="$7"
 min_length="$8"
@@ -67,15 +67,15 @@ else
     echo "Sample handling : Samples processed separately"
 fi
 
-if [ "${trimming}" = true ]; then
-    echo "Trimming        : Enabled"
+if [ "${adapters}" = true ]; then
+    echo "Adapters        : Enabled"
 else
-    echo "Trimming        : Disabled"
+    echo "Adapters        : Disabled"
 fi
 
 echo ""
 
-echo "CUTADAPT DATA TRIMMING"
+echo "FASTP DATA TRIMMING"
 echo "Phred Score Qual. : ${min_quality}"
 echo "Length min        : ${min_length}"
 echo ""

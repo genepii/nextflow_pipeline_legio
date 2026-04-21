@@ -1,0 +1,35 @@
+Bootstrap: docker
+From: quay.io/biocontainers/sra-tools:3.2.1--h4304569_1
+
+%labels
+    Author "nextflow_pipeline_legio"
+    Version "sra-tools-3.2.1-stable"
+    Purpose "Fix segfault prefetch/fasterq-dump Singularity"
+
+%environment
+    export LC_ALL=C
+    export PATH=/usr/local/bin:$PATH
+
+    # IMPORTANT: isoler complètement le cache VDB
+    export TMPDIR=/tmp
+    export HOME=/tmp
+    export VDB_CONFIG=/tmp/vdb-config.kfg
+    export NCBI_SETTINGS=/tmp/ncbi
+
+%post
+    mkdir -p /tmp/sra
+    mkdir -p /tmp/ncbi
+
+    # config VDB propre (évite crash cleanup final de prefetch)
+    echo '/repository/user/main/public/root = "/tmp/sra"' > /tmp/vdb-config.kfg
+
+    # désactiver comportements instables HTTPS multi-thread
+    echo '/http/timeout = "60000"' >> /tmp/vdb-config.kfg
+    echo '/http/connection-timeout = "30000"' >> /tmp/vdb-config.kfg
+
+    # sanity check
+    prefetch --version || true
+    fasterq-dump --version || true
+
+%runscript
+    exec "$@"

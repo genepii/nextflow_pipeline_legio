@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: quay.io/biocontainers/sra-tools:3.4.1--h4304569_1
+
+%labels
+    Author nextflow_pipeline_legio
+    Version SRA-Toolkit-3.4.1
+    Source quay.io/biocontainers
+    Description SRA Toolkit (prefetch + fasterq-dump) for HPC
+
+%environment
+    export LC_ALL=C
+    export VDB_CONFIG=/tmp/vdb-config.kfg
+
+%post
+    # config non interactive (important sur cluster)
+    mkdir -p /tmp/sra
+    echo '/repository/user/main/public/root = "/tmp/sra"' > /tmp/vdb-config.kfg
+
+    # vérification
+    prefetch --version
+    fasterq-dump --version
+
+%runscript
+    exec "$@"

@@ -1,0 +1,45 @@
+Bootstrap: docker
+From: debian:bookworm-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Description NCBI Entrez Direct (EDirect) environment
+    Version 25.3
+
+%post
+    set -e
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update repos + install dependencies
+    apt-get update && apt-get install -y \
+        curl \
+        perl \
+        ca-certificates \
+        bash \
+        coreutils \
+        gzip \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install EDirect
+    mkdir -p /opt/edirect
+    cd /opt/edirect
+
+    curl -fsSL https://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/install-edirect.sh \
+        -o install-edirect.sh
+
+    chmod +x install-edirect.sh
+
+    HOME=/opt/edirect ./install-edirect.sh
+
+    rm -f install-edirect.sh
+
+    # PATH setup (important: binaries are in edirect/)
+    ln -s /opt/edirect/edirect/* /usr/local/bin/ || true
+
+%environment
+    export PATH=/opt/edirect/edirect:$PATH
+    export PERL5LIB=/opt/edirect/edirect/perl5lib:$PERL5LIB
+
+%runscript
+    exec "$@"

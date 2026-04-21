@@ -1,0 +1,23 @@
+Bootstrap: docker
+From: quay.io/biocontainers/seqkit:2.13.0--he881be0_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Version SeqKit 2.13.0
+    Build reproducible true
+    Source biocontainers
+
+%help
+    SeqKit toolkit for FASTA/Q processing (v2.13.0).
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+    export PATH=/usr/local/bin:$PATH
+
+%runscript
+    exec seqkit "$@"
+
+%test
+    seqkit version

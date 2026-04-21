@@ -7,13 +7,13 @@ nextflow.enable.dsl=2
 // -----------------------------------------------------------------------------
 /*
 * Custom 23S–5S reference database
-* Input   : FASTA sequences and taxonomy
-* Output  : Naive Bayes classifier
-* Purpose : adapt the classifier to the data (local issue)
+* Input   : FASTA sequences and associated taxonomy file
+* Output  : trained Naive Bayes classifier (QIIME2 artifact)
+* Purpose : adapt the classifier to local dataset specificity
 */
 process IMPORT_REFSEQ {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
         val(reads_file)
@@ -30,9 +30,15 @@ process IMPORT_REFSEQ {
     """
 }
 
+/*
+* Taxonomy import step
+* Input   : taxonomy file in TSV format
+* Output  : QIIME2 taxonomy artifact (.qza)
+* Purpose : prepare taxonomic annotations for classifier training
+*/
 process IMPORT_TAXA {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
         val(taxa_file)
@@ -50,9 +56,15 @@ process IMPORT_TAXA {
     """
 }
 
+/*
+* Naive Bayes classifier training
+* Input   : reference sequences + taxonomy artifact
+* Output  : trained QIIME2 classifier (.qza)
+* Purpose : enable taxonomic assignment of ASVs/reads
+*/
 process GENERATE_CLASSIFIER_BAYES {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
         path classifier_reads
@@ -72,14 +84,71 @@ process GENERATE_CLASSIFIER_BAYES {
 
 // -----------------------------------------------------------------------------
 /*
-* Remove Illumina adaptaters and bad quality reads
-* Input   : tuples with sample_id, Illumina R1 and R2 (optionnal)
-* Output  : tuples with sample_id, Illumina R1 and R2 (optionnal)
-* Purpose : generate cleaned dataset for Qiime2 analysis
+* Reads quality control
+* Input   : FASTQ files (R1 or R1/R2)
+* Output  : FastQC reports (HTML + ZIP)
+* Purpose : assess sequencing quality before or after downstream processing
 */
-process TRIMMING_CUTADAPT {
-    label 'cutadapt'
-    publishDir "${params.result}", mode: 'copy'
+process QC_FASTQC {
+    label 'fastqc'
+    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
+
+    input:
+        val(read_type)
+        tuple val(sample_id), val(r1), val(r2)
+
+    output:
+        tuple val(sample_id), path("*.zip"), emit: zip_files
+        tuple val(sample_id), path("*.html"), emit: html_files
+
+    script:
+    def inputs = params.paired_end ?
+        "${r1} ${r2}" :
+        "${r1}"
+
+    """
+    fastqc \
+        ${inputs} \
+        --threads ${task.cpus} \
+        --outdir ./       
+    """
+}
+
+/*
+* Aggregated quality control report
+* Input   : collection of FastQC reports (ZIP files)
+* Output  : MultiQC HTML report
+* Purpose : provide a global overview of sequencing quality
+*/
+process QC_MULTIQC {
+    label 'multiqc'
+    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
+
+    input:
+        val(read_type)
+        path fastqc_zip
+
+    output:
+        path "General_multiQC_report.html"
+
+    script:
+    """
+    multiqc ${fastqc_zip} \
+        --filename "General_multiQC_report.html" \
+        --force
+    """
+}
+
+// -----------------------------------------------------------------------------
+/*
+* Paired-end reads filtering/trimming step
+* Input   : R1 and R2 FASTQ files per sample
+* Output  : trimmed paired FASTQ files
+* Purpose : adapter trimming + quality filtering + length filtering
+*/
+process TRIM_FASTP {
+    label 'fastp'
+    publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
         tuple val(sample_id), val(r1), val(r2)
@@ -87,40 +156,24 @@ process TRIMMING_CUTADAPT {
     output:
         tuple val(sample_id),
             path("${sample_id}_trimR1.fastq.gz"),
-            path(params.paired_end ? "${sample_id}_trimR2.fastq.gz" : null)
-
+            path("${sample_id}_trimR2.fastq.gz")
+        
     script:
-    def is_paired = params.paired_end
-
-    def adapter = is_paired ?
-        "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" :
-        "-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA"
-
-    def quality = is_paired ?
-        "-q ${params.min_quality},${params.min_quality}" :
-        "-q ${params.min_quality}"
-
-    def minlen = "--minimum-length ${params.min_length}"
-
+    def adapters = params.adapters ? "" : "--disable_adapter_trimming"
+    
     def r1_out = "${sample_id}_trimR1.fastq.gz"
-    def r2_out = is_paired ? "${sample_id}_trimR2.fastq.gz" : "null"
-
-    def inputs = is_paired ?
-        "${r1} ${r2}" :
-        "${r1}"
-
-    def outputs = is_paired ?
-        "-o ${r1_out} -p ${r2_out}" :
-        "-o ${r1_out}"
+    def r2_out = "${sample_id}_trimR2.fastq.gz"
+    def io_opts = params.paired_end ?
+        "-i ${r1} -I ${r2} -o ${r1_out} -O ${r2_out}" :
+        "-i ${r1} -o ${r1_out}"
 
     """
-    cutadapt \
-        -j ${task.cpus} \
-        ${adapter} \
-        ${quality} \
-        ${minlen} \
-        ${outputs} \
-        ${inputs}
+    fastp \
+        ${io_opts} \
+        --qualified_quality_phred ${params.min_quality} \
+        --length_required ${params.min_length} \
+        --thread ${task.cpus} \
+        ${adapters}
     """
 }
 
@@ -134,7 +187,7 @@ process TRIMMING_CUTADAPT {
 */
 process GENERATE_MANIFEST {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
         tuple val(sample_id), val(r1), val(r2)
@@ -163,7 +216,7 @@ process GENERATE_MANIFEST {
 */
 process GENERATE_MANIFEST_ALL {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(manifests)
@@ -193,7 +246,7 @@ process GENERATE_MANIFEST_ALL {
 */
 process IMPORT_MANIFEST {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(manifest)
@@ -225,7 +278,7 @@ process IMPORT_MANIFEST {
 */
 process QC_DEMUX {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/1_Qiime2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(demux)
@@ -250,7 +303,7 @@ process QC_DEMUX {
 */
 process DENOISE_DADA2 {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/2_Dada2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(demux)
@@ -288,14 +341,14 @@ process DENOISE_DADA2 {
 }
 
 /*
-* DADA2 metrics (QC)
-* Input   : feature table and representative sequences (.qza)
-* Output  : three types of visualisation (qzv)
-* Purpose : generate quality plots (QC analysis)
+* DADA2 denoising metadata QC report
+* Input   : DADA2 summary statistics artifact
+* Output  : QIIME2 visualization (.qzv) of denoising stats
+* Purpose : assess read filtering, error correction, and denoising performance
 */
 process QC_DADA2_META {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/2_Dada2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(stats_dada2)
@@ -311,9 +364,15 @@ process QC_DADA2_META {
     """
 }
 
+/*
+* DADA2 feature table summary QC
+* Input   : feature table generated by DADA2
+* Output  : QIIME2 visualization of feature table statistics
+* Purpose : evaluate sequencing depth distribution and sample composition
+*/
 process QC_DADA2_TABLE {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/2_Dada2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(table_dada2)
@@ -329,9 +388,15 @@ process QC_DADA2_TABLE {
     """
 }
 
+/*
+* Representative sequences QC visualization
+* Input   : representative sequences from DADA2
+* Output  : QIIME2 visualization of sequence distribution
+* Purpose : inspect sequence diversity and representative ASVs
+*/
 process QC_DADA2_REP {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/2_Dada2", mode: 'copy'
 
     input:
         tuple val(sample_id), path(rep_dada2)
@@ -356,7 +421,7 @@ process QC_DADA2_REP {
 */
 process TAXA_CLASSIFICATION {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
 
     input:
         path classifier
@@ -384,7 +449,7 @@ process TAXA_CLASSIFICATION {
 */
 process TAXA_FILTERING {
     label 'qiime'
-    publishDir "${params.result}/dev", mode: 'copy'
+    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
 
     input:
         tuple val(sample_id), path(taxa_classified), path(table_dada2)
@@ -403,14 +468,14 @@ process TAXA_FILTERING {
 }
 
 /*
-* Taxonomic classification metrics
-* Input   : taxonomy artifact
-* Output  : visualisation (qzv), barplot or krona
-* Purpose : generate quality plots (QC analysis)
+* Initial taxonomic classification overview (rarefied/unfiltered data)
+* Input   : DADA2 feature table + taxonomic assignments
+* Output  : taxonomic barplot visualization (.qzv)
+* Purpose : evaluate initial community composition before filtering
 */
 process QC_INIT_CLASSIFICATION {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
         tuple val(sample_id), path(taxa_classified), path(table_dada2)
@@ -429,9 +494,15 @@ process QC_INIT_CLASSIFICATION {
     """
 }
 
+/*
+* Taxonomic classification after feature filtering
+* Input   : filtered feature table + taxonomic assignments
+* Output  : filtered taxonomic barplot visualization (.qzv)
+* Purpose : assess how filtering impacts community structure representation
+*/
 process QC_FILTERED_CLASSIFICATION {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
         tuple val(sample_id), path(taxa_classified), path(table_filtered)
@@ -450,9 +521,15 @@ process QC_FILTERED_CLASSIFICATION {
     """
 }
 
+/*
+* Initial taxonomic composition visualization using Krona (unfiltered data)
+* Input   : DADA2 feature table + taxonomic assignments
+* Output  : interactive Krona plot (.qzv)
+* Purpose : explore hierarchical taxonomic abundance before filtering
+*/
 process KRONA_INIT_CLASSIFICATION {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
         tuple val(sample_id), path(taxa_classified), path(table_dada2)
@@ -471,9 +548,15 @@ process KRONA_INIT_CLASSIFICATION {
     """
 }
 
+/*
+* Taxonomic composition visualization using Krona after filtering
+* Input   : filtered feature table + taxonomic assignments
+* Output  : interactive Krona plot (.qzv)
+* Purpose : evaluate hierarchical taxonomy structure after quality filtering
+*/
 process KRONA_FILT_CLASSIFICATION {
     label 'qiime'
-    publishDir params.result, mode: 'copy'
+    publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
         tuple val(sample_id), path(taxa_classified), path(table_filtered)
@@ -509,7 +592,7 @@ process CREATE_INFO {
 
         val paired_end
         val all_in_one
-        val trimming
+        val adapters
 
         val min_quality
         val min_length
@@ -540,7 +623,7 @@ process CREATE_INFO {
         "${suffix}" \
         "${paired_end}" \
         "${all_in_one}" \
-        "${trimming}" \
+        "${adapters}" \
         "${min_quality}" \
         "${min_length}" \
         "${trim_left_f}" \
@@ -555,6 +638,48 @@ process CREATE_INFO {
         "${taxa}" \
         "${confidence}" \
         "${n_jobs}"
+    """
+}
+
+process FASTQC_INFO {
+    label 'fastqc'
+
+    input:
+        path file 
+
+    output: 
+        path "fastqc_${params.suffix}.txt"
+
+    script:
+    """
+    software_track_file="fastqc_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "FASTQC VERSION" >> \$software_track_file
+    fastqc --version >> \$software_track_file || true
+    """
+}
+
+process MULTIQC_INFO {
+    label 'multiqc'
+
+    input:
+        path file 
+
+    output: 
+        path "multiqc_${params.suffix}.txt"
+
+    script:
+    """
+    software_track_file="multiqc_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "MULTIQC VERSION" >> \$software_track_file
+    multiqc --version >> \$software_track_file || true
     """
 }
 
@@ -582,25 +707,24 @@ process QIIME_INFO {
     """
 }
 
-process CUTADAPT_INFO {
-    label 'cutadapt'
+process FASTP_INFO {
+    label 'fastp'
 
     input:
         path file 
 
     output: 
-        path "cutadapt_${params.suffix}.txt"
+        path "fastp_${params.suffix}.txt"
 
     script:
     """
-    software_track_file="cutadapt_${params.suffix}.txt"
+    software_track_file="fastp_${params.suffix}.txt"
     cat $file > \$software_track_file
 
-    if [ "${params.trimming}" = "true" ]; then
-        echo "" >> \$software_track_file
-        echo "CUTADAPT" >> \$software_track_file
-        cutadapt --version >> \$software_track_file
-    fi
+    echo "" >> \$software_track_file
+
+    echo "FASTP VERSION" >> \$software_track_file
+    fastp --version >> \$software_track_file || true
     """
 }
 
@@ -612,11 +736,11 @@ process PUBLISH_INFO {
         path file 
 
     output: 
-        path "config_${params.suffix}.txt"
+        path "softwaresTrackfile_${params.suffix}.txt"
 
     script:
     """
-    software_track_file="config_${params.suffix}.txt"
+    software_track_file="softwaresTrackfile_${params.suffix}.txt"
     cat $file > \$software_track_file
     """
 }

@@ -18,12 +18,18 @@ if (params.paired_end) {
     inputs_ch = Channel
         .fromFilePairs("${params.input_dir}/*_{R1,R2}.fastq*")
         .map { id, reads ->
-            def sample_id = id.replaceFirst(/_R1.*/, '')
+
+            def base = id
+
+            def sample_id = base.contains('_') ?
+                base.split('_')[0] :
+                base.replaceFirst(/_R1.*/, '')
+
             def r1 = reads[0]
             def r2 = reads[1]
 
-            assert sample_id 
-            assert r1 
+            assert sample_id
+            assert r1
             assert r2
 
             tuple(sample_id, r1, r2)
@@ -33,10 +39,15 @@ if (params.paired_end) {
     inputs_ch = Channel
         .fromPath("${params.input_dir}/*_R1.fastq*")
         .map { r1 ->
-            def sample_id = r1.baseName.replaceFirst(/_R1.*/, '')
 
-            assert sample_id 
-            assert r1 
+            def base = r1.baseName
+
+            def sample_id = base.contains('_') ?
+                base.split('_')[0] :
+                base.replaceFirst(/_R1.*/, '')
+
+            assert sample_id
+            assert r1
 
             tuple(sample_id, r1, null)
         }
@@ -52,7 +63,7 @@ taxa_ch = Channel.fromPath(params.taxa)
 // -----------------------------------------------------------------------------
 
 include {
-    TRIMMING_CUTADAPT
+    TRIM_FASTP
     GENERATE_MANIFEST
     GENERATE_MANIFEST_ALL
     IMPORT_MANIFEST
@@ -71,10 +82,22 @@ include {
     KRONA_INIT_CLASSIFICATION
     KRONA_FILT_CLASSIFICATION
     CREATE_INFO
+    FASTQC_INFO
+    MULTIQC_INFO
     QIIME_INFO
-    CUTADAPT_INFO
+    FASTP_INFO
     PUBLISH_INFO
 } from "./modules/modules_qiime2_amplicons.nf"
+
+include { 
+    QC_FASTQC as QC_FASTQC_RAW 
+    QC_MULTIQC as QC_MULTIQC_RAW
+} from './modules/modules_qiime2_amplicons.nf'
+
+include { 
+    QC_FASTQC as QC_FASTQC_TRIM 
+    QC_MULTIQC as QC_MULTIQC_TRIM
+} from './modules/modules_qiime2_amplicons.nf'
 
 
 // -----------------------------------------------------------------------------
@@ -86,16 +109,49 @@ workflow {
     // ---------------------------
     // BAYESIAN CLASSIFIER
     // ---------------------------
-    IMPORT_REFSEQ(reads_ch)
-    IMPORT_TAXA(taxa_ch)
-    GENERATE_CLASSIFIER_BAYES(IMPORT_REFSEQ.out, IMPORT_TAXA.out)
+    classifier_path = file("./assets/qiime2_amplicons/${params.db}_classifier.qza")
+    
+    if (classifier_path?.exists()) {
+        classifier_ch = Channel.value(classifier_path)
+        log.info "Classifier already in files, skipping training steps"
+    } else {
+        IMPORT_REFSEQ(reads_ch)
+        IMPORT_TAXA(taxa_ch)
+        classifier_ch = GENERATE_CLASSIFIER_BAYES(IMPORT_REFSEQ.out, IMPORT_TAXA.out)
+    }
+
+    // ---------------------------
+    // raw QC PLOTS
+    // ---------------------------
+    read_type_raw = "0_Raw"
+
+    qc_raw = QC_FASTQC_RAW(read_type_raw, inputs_ch)
+
+    raw_fastqc_zips = qc_raw.zip_files
+        .map { sample_id, zip -> zip }
+        .flatten()
+        .collect()
+
+    QC_MULTIQC_RAW(read_type_raw, raw_fastqc_zips)
 
     // ---------------------------
     // TRIMMING
     // ---------------------------
-    def samples_ch = params.trimming \
-        ? TRIMMING_CUTADAPT(inputs_ch) \
-        : inputs_ch
+    samples_ch = TRIM_FASTP(inputs_ch)
+
+    // ---------------------------
+    // trim QC PLOTS
+    // ---------------------------
+    read_type_trim = "0-1_Trimmed"
+
+    qc_trimmed = QC_FASTQC_TRIM(read_type_trim, samples_ch)
+
+    trimmed_fastqc_zips = qc_trimmed.zip_files
+        .map { sample_id, zip -> zip }
+        .flatten()
+        .collect()
+
+    QC_MULTIQC_TRIM(read_type_trim, trimmed_fastqc_zips)
 
     // ---------------------------
     // QIIME2 MANIFEST
@@ -123,7 +179,7 @@ workflow {
     // ---------------------------
     // CLASSIFICATION + QC
     // ---------------------------
-    TAXA_CLASSIFICATION(GENERATE_CLASSIFIER_BAYES.out, DENOISE_DADA2.out.rep_dada2)
+    TAXA_CLASSIFICATION(classifier_ch, DENOISE_DADA2.out.rep_dada2)
 
     joined_taxa_table_ch = TAXA_CLASSIFICATION.out.join(DENOISE_DADA2.out.table_dada2)
     QC_INIT_CLASSIFICATION(joined_taxa_table_ch)
@@ -146,7 +202,7 @@ workflow {
 
         params.paired_end,
         params.all_in_one,
-        params.trimming,
+        params.adapters,
 
         params.min_quality,
         params.min_length,
@@ -166,7 +222,9 @@ workflow {
         params.confidence,
         params.n_jobs
     )
-    QIIME_INFO(CREATE_INFO.out)
-    CUTADAPT_INFO(QIIME_INFO.out)
-    PUBLISH_INFO(CUTADAPT_INFO.out)
+    FASTQC_INFO(CREATE_INFO.out)
+    MULTIQC_INFO(FASTQC_INFO.out)
+    FASTP_INFO(MULTIQC_INFO.out)
+    QIIME_INFO(FASTP_INFO.out)
+    PUBLISH_INFO(QIIME_INFO.out)
 }
