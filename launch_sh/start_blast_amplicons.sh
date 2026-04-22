@@ -2,14 +2,14 @@
 
 ################################################################################
 #                                                                              #
-# start_qiime2_amplicons.sh version 2                                          #
+# start_blast_amplicons.sh version 1                                           #
 #                                                                              #
 # Aurelie PETICCA, last update: 2026-04                                        #
-# Christophe GINEVRA, Camille JACQUELINE                                       #
+# Christophe GINEVRA                                                           #
 #                                                                              #
-# Aim: Launch for Qiime2 Amplicons nextflow pipeline                           #
+# Aim: Launch for Blastn Amplicons nextflow pipeline                           #
 #                                                                              #
-# Usage:  start_qiime2_amplicons.sh sequencing_ID [options]                    #
+# Usage:  start_blast_amplicons.sh sequencing_ID [options]                     #
 #                                                                              #
 ################################################################################
 
@@ -24,20 +24,21 @@ display_help() {
  	echo >&2
  	echo "   -d,--seq_id    [str]           SEQUENCING_ID, locally a date in format YYYYMMDD, Mandatory" >&2
  	echo "   -c,--config    [path]          nextflow config file to use, by default : 
-                                                <nextflow_folder>/config/qiime2_amplicons.config" >&2
+                                                <nextflow_folder>/config/blast_amplicons.config" >&2
  	echo "   -i,--input     [path]          folder containing the sequencing data, by default : 
                                                 /srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-{sequencing_ID}" >&2
 	echo "   -w,--work      [path]          folder where all the output files will be written, by default : 
-                                                /srv/scratch/iai/bachcl/result/Legionella/23S-5S/{sequencing_ID}/{analyse_ID}_Qiime2-amplicons" >&2
+                                                /srv/scratch/iai/bachcl/result/Legionella/23S-5S/{sequencing_ID}/{analyse_id}_Blast-amplicons" >&2
  	echo "   -m,--tmp       [path]          temporary folder where the input files will be stored, by default : 
                                                 /srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S/{sequencing_ID}" >&2
  	echo "   -s,--save      [path]          folder where the input files will be saved, by default : 
                                                 /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/23S-5S/{sequencing_ID}" >&2
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_ID}_Qiime2-amplicons" >&2
- 	echo "   -pe,--paired   [True/False]    PE (True) or SE (False) Illumina sequencing, by default : True" >&2
- 	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : False" >&2
- 	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
+                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_id}_Blast-amplicons" >&2
+ 	echo "   -a,--adapter   [True/False]    remove Illumina adaptaters during trimming step, by default : True" >&2
+ 	echo "   -e,--deconta   [True/False]    decontamination of reads against a database, by default : False" >&2
+ 	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
+ 	echo "   -k,--kraken    [True/False]    classifies sequence fragments with Kraken2, by default : True" >&2
 	echo >&2
  	echo "   -h, --help                     write this report and exit" >&2
     echo >&2
@@ -48,15 +49,16 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -d, --seq_id   Sequencing ID (required)"
-    echo "  -i, --input    Input folder"
     echo "  -c, --config   Config file"
-    echo "  -o, --output   Output folder"
-    echo "  -s, --save     Save folder"
-    echo "  -m, --tmp      Temporary folder"
+    echo "  -i, --input    Input folder"
     echo "  -w, --work     Work folder"
-    echo "  -pe, --paired  Paired-end (True/False)"
-    echo "  -a, --all      One or separately (True/False)"
-    echo "  -t, --adapters Remove Illumina adapters (True/False)"
+    echo "  -m, --tmp      Temporary folder"
+    echo "  -s, --save     Save folder"
+    echo "  -o, --output   Output folder"
+ 	echo "  -a, --adapter  Remove adapters"
+ 	echo "  -e, --deconta  Decontamination"
+ 	echo "  -n, --down     Downsampling"
+ 	echo "  -k, --kraken   Kraken2 classification"
     echo "  -h, --help     Help"
 }
 
@@ -71,21 +73,27 @@ save_folder_prefix=""
 tmp_folder_prefix=""
 work_folder_prefix=""
 paired_end=""
-all_in_one=""
-adapters=""
+adapter=""
+deconta=""
+downsampling=""
+down_to=""
+kraken=""
 analyse_id=""
 
 ## Default values
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-config_file="${script_dir}/../config/qiime2_amplicons.config"
+config_file="${script_dir}/../config/blast_amplicons.config"
 
 output_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S"
 save_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/23S-5S"
 tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
 paired_end="true"
-all_in_one="false"
-adapters="true"
+adapter="true"
+deconta="false"
+downsampling="false"
+down_to=1
+kraken="true"
 analyse_id=$(date +%Y%m%d)
 
 ## User values
@@ -136,18 +144,31 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
 
-        -pe|--paired)
-            paired_end="${2:?ERROR: missing value for --paired}"
+        -a|--adapter)
+            adapter="${2:?ERROR: missing value for --adapter}"
             shift 2
             ;;
 
-        -a|--all)
-            all_in_one="${2:?ERROR: missing value for --all}"
+        -e|--deconta)
+            deconta="${2:?ERROR: missing value for --deconta}"
             shift 2
             ;;
 
-        -t|--adapters)
-            adapters="${2:?ERROR: missing value for --adapters}"
+        -n|--down)
+            down_to="${2:?ERROR: missing value for --down}"
+
+            #if down_to < 1
+            if awk "BEGIN {exit !($down_to < 1)}"; then
+                downsampling="true"
+            else
+                downsampling="false"
+            fi
+
+            shift 2
+            ;;
+
+        -k|--kraken)
+            kraken="${2:?ERROR: missing value for --kraken}"
             shift 2
             ;;
 
@@ -187,17 +208,17 @@ fi
 if [[ -z "${input_folder}" ]]; then
     input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-${sequencing_id}"
 fi
-output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons"
+output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons"
 save_folder="${save_folder_prefix}/${sequencing_id}"
 tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
-work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons/work"
-result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons"
+work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons/work"
+result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons"
 
 
 ################################################################################
 # start script
 ## Variables for launching nextflow
-pipeline_file="${script_dir}/../workflow_qiime2_amplicons.nf"
+pipeline_file="${script_dir}/../workflow_blast_amplicons.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
 echo "START -----------------------------------------------------------------------------------------------------------------"
@@ -226,8 +247,8 @@ echo "--- FINISHED - to SAVE FOLDER --------------------------------------------
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
-## Start Qiime2 analysis
-echo "--- QIIME2 AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
+## Start Blast analysis
+echo "--- BLAST AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
@@ -244,8 +265,11 @@ k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     -w "${work_folder}" \
     --result "${result_folder}" \
     --paired_end "${paired_end}" \
-    --all_in_one "${all_in_one}" \
-    --adapters "${adapters}" \
+    --adapter "${adapter}" \
+    --decontamination "${deconta}" \
+    --downsampling "${downsampling}" \
+    --bbtools_downsampled "${down_to}" \
+    --kraken2_assign "${kraken}" \
     -with-trace "${result_folder}/trace_${sequencing_id}_${analyse_id}.txt" \
     -with-report "${result_folder}/report_${sequencing_id}_${analyse_id}.html" \
     || LOG="error"

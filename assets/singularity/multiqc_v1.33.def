@@ -14,6 +14,7 @@ From: python:3.11-slim
         gcc \
         python3-dev \
         libexpat1 \
+        procps \
         && rm -rf /var/lib/apt/lists/*
 
     pip install --no-cache-dir multiqc==1.33

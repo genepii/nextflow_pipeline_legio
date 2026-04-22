@@ -13,6 +13,10 @@ From: python:3.11.9-slim
     export LANG=C
 
 %post
+    apt-get update && apt-get install -y \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
     pip install --no-cache-dir \
         pandas==2.2.2 \
         matplotlib==3.9.0 \
