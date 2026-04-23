@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 30 ]; then
-    echo "ERROR: 30 arguments expected, got $#"
+if [ "$#" -ne 33 ]; then
+    echo "ERROR: 33 arguments expected, got $#"
     exit 1
 fi
 
@@ -38,14 +38,18 @@ bbtools_downsampled="${21}"
 
 kraken2_db="${22}"
 
-blast_db="${23}"
-perc_id="${24}"
-loose_id="${25}"
-query_cov="${26}"
-loose_cov="${27}"
-min_qlen="${28}"
-loose_qlen="${29}"
-delta="${30}"
+min_overlap="${23}"
+max_overlap="${24}"
+dovetail_overlap="${25}"
+
+blast_db="${26}"
+perc_id="${27}"
+loose_id="${28}"
+query_cov="${29}"
+loose_cov="${30}"
+min_qlen="${31}"
+loose_qlen="${32}"
+delta="${33}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -97,6 +101,12 @@ echo ""
 
 echo "KRAKEN2"
 echo "Database : ${kraken2_db}"
+echo ""
+
+echo "MERGED READS"
+echo "Min. overlapping      : ${min_overlap}"
+echo "Max. overlapping      : ${max_overlap}"
+echo "Dovetail overlapping  : ${dovetail_overlap}"
 echo ""
 
 echo "BLAST"

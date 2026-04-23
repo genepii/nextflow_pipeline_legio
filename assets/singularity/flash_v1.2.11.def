@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: quay.io/biocontainers/flash:1.2.11--ha92aebf_2
+
+%labels
+    Author nextflow_pipeline_legio
+    Version FLASH 1.2.11
+    Build reproducible true
+    Source biocontainers
+    Usage Nextflow HPC compatible
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    export MKL_NUM_THREADS=1
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+
+%runscript
+    exec "$@"

@@ -170,7 +170,8 @@ process DOWNSAMPLE_BBTOOLS {
         in1="${r1}" in2="${r2}" \
         out1="${sample_id}_R1_downsampled.fastq.gz" \
         out2="${sample_id}_R2_downsampled.fastq.gz" \
-        samplerate=${params.bbtools_downsampled}
+        samplerate=${params.bbtools_downsampled} \
+        -Xmx${task.memory.toGiga()}g
     """
 }
 
@@ -345,28 +346,59 @@ process MPA_FAMILY_BARPLOT {
 
 // -----------------------------------------------------------------------------
 /*
-* Paired-end reads merging and FASTA conversion
+* Paired-end reads merging 
 * Input   : R1 and R2 FASTQ files
-* Output  : merged sequences in FASTA format
+* Output  : merged sequences in FASTQ format
 * Purpose : reconstruct full amplicon sequences and simplify downstream analysis
 */
-process MERGE_FASTQ_TO_FASTA {
-    label 'vsearch'
+process MERGE_FASTQ {
+    label 'flash'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
         tuple val(sample_id), path(r1), path(r2)
 
     output:
+        tuple val(sample_id), path("${sample_id}_flashOut/${sample_id}.extendedFrags.fastq.gz")
+
+    script:
+    def dovetail = params.dovetail_overlap ? 
+        "--allow-outies" : 
+        ""
+    """
+    flash ${r1} ${r2} \
+        -d ${sample_id}_flashOut \
+        -o ${sample_id} \
+        -m ${params.min_overlap} \
+        -M ${params.max_overlap}  \
+        --compress \
+        -t ${task.cpus} \
+        ${dovetail}
+    """
+}
+
+/*
+* FASTQ to FASTA conversion
+* Input   : merged FASTQ file
+* Output  : merged sequences in FASTA format
+* Purpose : reconstruct full amplicon sequences and simplify downstream analysis
+*/
+process FASTQ_TO_FASTA {
+    label 'bbtools'
+    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
+
+    input:
+        tuple val(sample_id), path(fastq)
+
+    output:
         tuple val(sample_id), path("${sample_id}_merged.fasta")
 
     script:
     """
-    vsearch \
-        --fastq_mergepairs "${r1}" \
-        --reverse "${r2}" \
-        --fastaout "${sample_id}_merged.fasta" \
-        --threads ${task.cpus}
+    reformat.sh \
+        in="${fastq}" \
+        out="${sample_id}_merged.fasta" \
+        -Xmx${task.memory.toGiga()}g
     """
 }
 
@@ -554,6 +586,10 @@ process CREATE_INFO {
 
         val(kraken2_db)
 
+        val(min_overlap)
+        val(max_overlap)
+        val(dovetail_overlap)
+
         val(blast_db)
         val(perc_id)
         val(loose_id)
@@ -591,6 +627,9 @@ process CREATE_INFO {
         "${bbwrap_path}" \
         "${bbtools_downsampled}" \
         "${kraken2_db}" \
+        "${min_overlap}" \
+        "${max_overlap}" \
+        "${dovetail_overlap}" \
         "${blast_db}" \
         "${perc_id}" \
         "${loose_id}" \
@@ -772,6 +811,27 @@ process KRONA_INFO {
 
     echo "KRONA VERSION" >> \$software_track_file
     ktImportText 2>&1 | grep -oE 'KronaTools [0-9.]+' | awk '{print \$2}' >> \$software_track_file
+    """
+}
+
+process FLASH_INFO {
+    label 'flash'
+
+    input:
+        path(file) 
+
+    output: 
+        path("flash_${params.suffix}.txt")
+
+    script:
+    """
+    software_track_file="flash_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "FLASH VERSION" >> \$software_track_file
+    flash -v >> \$software_track_file || true
     """
 }
 

@@ -68,7 +68,8 @@ include {
     MPA_TO_KRONA
     COUNT_FASTQ_READS
     MPA_FAMILY_BARPLOT
-    MERGE_FASTQ_TO_FASTA
+    MERGE_FASTQ
+    FASTQ_TO_FASTA
     DEREPLICATE_FASTA
     COUNT_DEREP_FASTA
     BLASTN_FASTA
@@ -83,6 +84,7 @@ include {
     PYTHON_INFO
     KRONA_INFO
     VSEARCH_INFO
+    FLASH_INFO
     BLAST_INFO
     PUBLISH_INFO
 } from './modules/modules_blast_amplicons.nf'
@@ -205,9 +207,11 @@ workflow {
     // ---------------------------
     // BLAST AMPLICONS IDENTIFICATION
     // ---------------------------
-    MERGE_FASTQ_TO_FASTA(samples_ch)
+    MERGE_FASTQ(samples_ch)
 
-    DEREPLICATE_FASTA(MERGE_FASTQ_TO_FASTA.out)
+    FASTQ_TO_FASTA(MERGE_FASTQ.out)
+
+    DEREPLICATE_FASTA(FASTQ_TO_FASTA.out)
 
     BLASTN_FASTA(DEREPLICATE_FASTA.out.fasta)
 
@@ -254,6 +258,10 @@ workflow {
 
         params.kraken2_db,
 
+        params.min_overlap,
+        params.max_overlap,
+        params.dovetail_overlap,
+
         params.blast_db,
         params.perc_id,
         params.loose_id,
@@ -277,7 +285,8 @@ workflow {
         tmp_out = KRONA_INFO(PYTHON_INFO.out)
     }
     VSEARCH_INFO(tmp_out)
-    BLAST_INFO(VSEARCH_INFO.out)
+    FLASH_INFO(VSEARCH_INFO.out)
+    BLAST_INFO(FLASH_INFO.out)
 
     PUBLISH_INFO(BLAST_INFO.out)
 }
