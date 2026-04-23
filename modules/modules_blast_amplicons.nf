@@ -245,12 +245,12 @@ process ASSIGN_KRAKEN2 {
 }
 
 /*
-* Format Kraken2 output for Krona visualization
+* Format Kraken2 output for visualization
 * Input   : MPA-style taxonomic profile
-* Output  : Kraken2 results formatted (.tsv), with no double count
+* Output  : results formatted (.tsv), with no double count
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
-process MPA_FOR_KRONA {
+process MPA_MODIF {
     label 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
@@ -258,11 +258,11 @@ process MPA_FOR_KRONA {
         tuple val(sample_id), path(mpa)
 
     output:
-        tuple val(sample_id), path("${sample_id}_allKrona.input")
+        tuple val(sample_id), path("${sample_id}_mpaModif.tsv")
     
     script:
     """
-    blast_amplicons_mpa_to_krona_rebuild.py ${mpa} ${sample_id}_allKrona.input
+    blast_amplicons_mpa_modified.py ${mpa} ${sample_id}_mpaModif.tsv
     """
 }
 
@@ -325,7 +325,7 @@ process MPA_FAMILY_BARPLOT {
     // PublishDir in config file
 
     input:
-        tuple val(sample_id), path(mpa), path(total_reads)
+        tuple val(sample_id), path(mpa_modif), path(total_reads)
 
     output:
         tuple val(sample_id),
@@ -337,7 +337,7 @@ process MPA_FAMILY_BARPLOT {
     total=\$(cat ${total_reads} | head -n 1)
 
     blast_amplicons_mpa_family_barplot.py \
-        ${mpa} \
+        ${mpa_modif} \
         \$total \
         ${sample_id}_familyBarplot.tsv \
         ${sample_id}_familyBarplot.png

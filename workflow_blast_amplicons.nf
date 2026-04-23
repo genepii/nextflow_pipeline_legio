@@ -64,7 +64,7 @@ include {
     DOWNSAMPLE_BBTOOLS
     QC_SEQKIT
     ASSIGN_KRAKEN2
-    MPA_FOR_KRONA
+    MPA_MODIF
     MPA_TO_KRONA
     COUNT_FASTQ_READS
     MPA_FAMILY_BARPLOT
@@ -196,11 +196,11 @@ workflow {
     // ---------------------------
     if (params.kraken2_assign) {
         ASSIGN_KRAKEN2(samples_ch)
-        MPA_FOR_KRONA(ASSIGN_KRAKEN2.out)
-        MPA_TO_KRONA(MPA_FOR_KRONA.out)
+        MPA_MODIF(ASSIGN_KRAKEN2.out)
+        MPA_TO_KRONA(MPA_MODIF.out)
 
         COUNT_FASTQ_READS(samples_ch)
-        joined_mpa_total_ch = ASSIGN_KRAKEN2.out.join(COUNT_FASTQ_READS.out)
+        joined_mpa_total_ch = MPA_MODIF.out.join(COUNT_FASTQ_READS.out)
         MPA_FAMILY_BARPLOT(joined_mpa_total_ch)
     }
 

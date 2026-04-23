@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 # -------------------------
 
 if len(sys.argv) != 5:
-    sys.exit("Usage: blast_amplicons_mpa_family_barplot.py <input.mpa> <total_reads> <output.tsv> <output.png>")
+    sys.exit("Usage: blast_amplicons_mpa_family_barplot.py <input_mpa.tsv> <total_reads> <output.tsv> <output.png>")
 
 mpa_file = sys.argv[1]
 total_reads = int(sys.argv[2])
@@ -20,24 +20,23 @@ png_out = sys.argv[4]
 # -------------------------
 # Load data
 # -------------------------
-df = pd.read_csv(mpa_file, sep="\t", header=None, names=["tax", "count"])
+rows = []
+
+with open(mpa_file, "r") as f:
+    for line in f:
+        cols = line.strip().split("\t")
+
+        count = cols[0] if len(cols) > 0 else "NA"
+        family = cols[5] if len(cols) > 5 else "NA"
+
+        rows.append([count, family])
+
+df = pd.DataFrame(rows, columns=["count", "family"])
+df = df.fillna("NA")
 
 # Ensure numeric counts
 df["count"] = pd.to_numeric(df["count"], errors="coerce")
 df = df.dropna(subset=["count"])
-
-
-# -------------------------
-# Extract family taxa
-# -------------------------
-def get_family(tax):
-    for t in tax.split("|"):
-        if t.startswith("f__"):
-            return t.replace("f__", "")
-    return None
-
-df["family"] = df["tax"].apply(get_family)
-df = df.dropna()
 
 
 # -------------------------
