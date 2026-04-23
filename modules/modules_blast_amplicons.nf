@@ -359,7 +359,8 @@ process MERGE_FASTQ {
         tuple val(sample_id), path(r1), path(r2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_flashOut/${sample_id}.extendedFrags.fastq.gz")
+        tuple val(sample_id), path("${sample_id}_flashOut/${sample_id}.extendedFrags.fastq.gz"), emit: fasta
+        path("${sample_id}_flashOut")
 
     script:
     def dovetail = params.dovetail_overlap ? 

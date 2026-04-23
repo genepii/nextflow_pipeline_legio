@@ -15,7 +15,7 @@ project/
 
 ---
 
-- [TMP_HCL](#tmp_hcl)
+- [Nextflow Pipeline Legio](#nextflow_pipeline_legio)
   - [QIIME2 Amplicons Pipeline](#qiime2-amplicons-pipeline-nextflow)
   - [BLASTN Amplicons Pipeline](#blastn-amplicons-pipeline-nextflow)
 
@@ -133,6 +133,17 @@ By default :
 #### Description
 This pipeline processes Illumina paired-end amplicon sequencing data using Nextflow.
 It performs quality control, optional preprocessing steps, and taxonomic identification with a dedicated Legionella workflow.
+
+---
+
+#### Output annotation
+
+If multiple strains or species are detected for the same sequence after filtering BLAST results, the pipeline applies the following annotation rules:
+
+* When the species is identical but multiple strains are present, the strain is reported as `strain=Multi` (for multiple).
+* When different Legionella species are assigned to the same sequence, the result is marked as `L-ambiguous, strain=NA`.
+
+If no match is found during the process, the sequence is annotated as `Not_assigned`, with the strain set to `strain=NA`.
 
 ---
 

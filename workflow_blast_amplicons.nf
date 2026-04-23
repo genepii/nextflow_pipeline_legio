@@ -209,7 +209,7 @@ workflow {
     // ---------------------------
     MERGE_FASTQ(samples_ch)
 
-    FASTQ_TO_FASTA(MERGE_FASTQ.out)
+    FASTQ_TO_FASTA(MERGE_FASTQ.out.fasta)
 
     DEREPLICATE_FASTA(FASTQ_TO_FASTA.out)
 
