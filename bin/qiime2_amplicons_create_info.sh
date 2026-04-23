@@ -75,12 +75,12 @@ fi
 
 echo ""
 
-echo "FASTP DATA TRIMMING"
+echo "FASTP FILTERING - trimming"
 echo "Phred Score Qual. : ${min_quality}"
 echo "Length min        : ${min_length}"
 echo ""
 
-echo "DADA2 DENOISING PARAMETERS"
+echo "DADA2 DENOISING"
 echo "Trim left forward : ${trim_left_f} (not used if 0)"
 echo "Trim left reverse : ${trim_left_r} (not used if 0)"
 echo "Trunc length F    : ${trunc_len_f}"
