@@ -22,7 +22,7 @@ display_help() {
  	echo "Usage: $0 -d sequencing_ID [options]">&2
 	echo >&2
  	echo >&2
- 	echo "   -d,--seq_id    [str]           SEQUENCING_ID, locally a date in format YYYYMMDD, Mandatory" >&2
+ 	echo "   -d,--seq_id    [str]           SEQUENCING_ID, locally a date in format YYYYMMDD, Required" >&2
  	echo "   -c,--config    [path]          nextflow config file to use, by default : 
                                                 <nextflow_folder>/config/qiime2_amplicons.config" >&2
  	echo "   -i,--input     [path]          folder containing the sequencing data, by default : 
@@ -38,6 +38,7 @@ display_help() {
  	echo "   -pe,--paired   [True/False]    PE (True) or SE (False) Illumina sequencing, by default : True" >&2
  	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : False" >&2
  	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
+ 	echo "   -l,--classif   [str]           use blast, sklearn or vsearch for taxonomic classification, by default : sklearn" >&2
 	echo >&2
  	echo "   -h, --help                     write this report and exit" >&2
     echo >&2
@@ -57,6 +58,7 @@ usage() {
     echo "  -pe, --paired  Paired-end (True/False)"
     echo "  -a, --all      One or separately (True/False)"
     echo "  -t, --adapters Remove Illumina adapters (True/False)"
+    echo "  -l, --classif  Classifier choice (blast, sklearn, vsearch)"
     echo "  -h, --help     Help"
 }
 
@@ -85,13 +87,14 @@ tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
 paired_end="true"
 all_in_one="false"
-adapters="true"
+adapters="false"
+classifier="sklearn"
 analyse_id=$(date +%Y%m%d)
 
 ## User values
 ### Check args presence
 if [ $# -eq 0 ]; then
-    echo "ERROR: --seq_id is mandatory"
+    echo "ERROR: --seq_id is Required"
     usage
 	echo ""
     exit 1
@@ -114,6 +117,13 @@ while [ $# -gt 0 ]; do
         -i|--input)
             input_folder="${2:?ERROR: missing value for --input}"
             shift 2
+
+            # Check for FASTQ files
+            if ! compgen -G "${input_folder}"/*.fastq > /dev/null && \
+            ! compgen -G "${input_folder}"/*.fastq.gz > /dev/null; then
+                echo "ERROR: No FASTQ files found in input folder: ${input_folder}" >&2
+                exit 1
+            fi
             ;;
 
         -o|--output)
@@ -151,6 +161,15 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
 
+        -l|--classif)
+            classifier="${2:?ERROR: missing value for --classif}"
+            if [[ "$classifier" != "blast" && "$classifier" != "vsearch" && "$classifier" != "sklearn" ]]; then
+                echo "ERROR: invalid value for --classif (must be blast, vsearch or sklearn)" >&2
+                exit 1
+            fi
+            shift 2
+            ;;
+
         -h|--help)
             display_help
             exit 0
@@ -177,7 +196,7 @@ done
 
 ### Required argument check
 if [[ -z "${sequencing_id}" ]]; then
-    echo "ERROR: --seq_id is mandatory"
+    echo "ERROR: --seq_id is Required"
     usage
 	echo ""
     exit 1
@@ -187,11 +206,11 @@ fi
 if [[ -z "${input_folder}" ]]; then
     input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-${sequencing_id}"
 fi
-output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons"
+output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90" #TODO : modifier pour remettre le $classifier
 save_folder="${save_folder_prefix}/${sequencing_id}"
 tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
-work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons/work"
-result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons"
+work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90/work"
+result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90"
 
 
 ################################################################################
@@ -210,7 +229,11 @@ echo ""
 
 mkdir -p "${tmp_folder}"
 chmod -R 777 "${tmp_folder}"
-rsync -avQ --ignore-existing "${input_folder}/" "${tmp_folder}/"
+rsync -avQ --ignore-existing \
+    --include='*.fastq' \
+    --include='*.fastq.gz' \
+    --exclude='*' \
+    "${input_folder}/" "${tmp_folder}/"
 echo ""
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
@@ -219,7 +242,11 @@ echo ""
 
 ## Copy raw data from input server to storage server
 mkdir -p "${save_folder}"
-rsync -avQ --ignore-existing "${input_folder}/" "${save_folder}/"
+rsync -avQ --ignore-existing \
+    --include='*.fastq' \
+    --include='*.fastq.gz' \
+    --exclude='*' \
+    "${input_folder}/" "${save_folder}/"
 echo ""
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
@@ -232,23 +259,27 @@ echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ### Notification
-# echo "L'analyse du run Legionella-Amplicons-${sequencing_id} est en cours" \
-# | mail -s "Analyse de Legionella-Amplicon-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse QIIME2 AMPLICONS du run Legionella-Amplicons-${sequencing_id} est en cours" \
+# | mail -s "Analyse QIIME2 Legionella-Amplicons-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
-    -- "${nf_exec}"  \
-    -C "${config_file}"  \
-    run "${pipeline_file}"  \
+if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
+    -- "${nf_exec}" \
+    -C "${config_file}" \
+    run "${pipeline_file}" \
     --suffix "${sequencing_id}" \
     --input_dir "${tmp_folder}" \
     -w "${work_folder}" \
+    -profile local \
     --result "${result_folder}" \
     --paired_end "${paired_end}" \
     --all_in_one "${all_in_one}" \
     --adapters "${adapters}" \
+    --classifier "${classifier}" \
     -with-trace "${result_folder}/trace_${sequencing_id}_${analyse_id}.txt" \
-    -with-report "${result_folder}/report_${sequencing_id}_${analyse_id}.html" \
-    || LOG="error"
+    -with-report "${result_folder}/report_${sequencing_id}_${analyse_id}.html"
+then
+    LOG="error"
+fi
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -260,16 +291,18 @@ echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 mkdir -p "${output_folder}"
-rsync -avQ --exclude='*/' "$result_folder/" "$output_folder/"
+rsync -avQ \
+    --exclude='dev' \
+    --exclude='work' \
+    "$result_folder/" "$output_folder/"
 echo ""
-### NB : synchronising only the first level files, rest not needed
+### NB : synchronising every files/folders, dev and work not needed
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ## Remove results from calculation engine
-
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
 echo "Deleting... ${tmp_folder}"
@@ -280,7 +313,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ### Notification
-# echo "L'analyse du run Legionella-Amplicon-${sequencing_id} est disponible ici Z:\04_CNR_Legionella\NGS_results\23S-5S\\${sequencing_id}\\${analyse_id}" \
-# | mail -s "Analyse de Legionella-Amplicon-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse QIIME2 AMPLICONS du run Legionella-Amplicons-${sequencing_id} est disponible ici : ${output_folder}" \
+# | mail -s "Analyse QIIME2 Legionella-Amplicons-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
 echo "END -------------------------------------------------------------------------------------------------------------------"

@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 
 
 // -----------------------------------------------------------------------------
-// MAIN WORFLOW FOR BLASTN AMPLICONS ANALYSIS
+// MAIN WORFLOW FOR EL GATO NESTED SBT ANALYSIS
 // -----------------------------------------------------------------------------
 
 
@@ -68,12 +68,8 @@ include {
     MPA_TO_KRONA
     COUNT_FASTQ_READS
     MPA_FAMILY_BARPLOT
-    MERGE_FASTQ
-    FASTQ_TO_FASTA
-    DEREPLICATE_FASTA
-    COUNT_DEREP_FASTA
-    BLASTN_FASTA
-    FILTER_BLASTN
+    MLST_ELGATO
+    MERGE_ELGATO
     CREATE_INFO
     FASTQC_INFO
     MULTIQC_INFO
@@ -83,35 +79,19 @@ include {
     KRAKEN2_INFO
     PYTHON_INFO
     KRONA_INFO
-    VSEARCH_INFO
-    FLASH_INFO
-    BLAST_INFO
+    ELGATO_INFO
     PUBLISH_INFO
-} from './modules/modules_blast_amplicons.nf'
+} from './modules/modules_elgato_sbt.nf'
 
 include { 
     QC_FASTQC as QC_FASTQC_RAW 
     QC_MULTIQC as QC_MULTIQC_RAW
-} from './modules/modules_blast_amplicons.nf'
+} from './modules/modules_elgato_sbt.nf'
 
 include { 
     QC_FASTQC as QC_FASTQC_TRIM 
     QC_MULTIQC as QC_MULTIQC_TRIM
-} from './modules/modules_blast_amplicons.nf'
-
-include { 
-    QC_FASTQC as QC_FASTQC_PROC 
-    QC_MULTIQC as QC_MULTIQC_PROC
-} from './modules/modules_blast_amplicons.nf'
-
-include { 
-    PLOT_BLASTFILT as PLOT_BLASTLOOSE
-} from './modules/modules_blast_amplicons.nf'
-
-
-include { 
-    PLOT_BLASTFILT as PLOT_BLASTSTRICT
-} from './modules/modules_blast_amplicons.nf'
+} from './modules/modules_elgato_sbt.nf'
 
 
 // -----------------------------------------------------------------------------
@@ -205,25 +185,13 @@ workflow {
     }
 
     // ---------------------------
-    // BLAST AMPLICONS IDENTIFICATION
+    // MLST PROFILE
     // ---------------------------
-    MERGE_FASTQ(samples_ch)
-
-    FASTQ_TO_FASTA(MERGE_FASTQ.out.fasta)
-
-    DEREPLICATE_FASTA(FASTQ_TO_FASTA.out)
-
-    BLASTN_FASTA(DEREPLICATE_FASTA.out.fasta)
-
-    FILTER_BLASTN(BLASTN_FASTA.out)
-
-    COUNT_DEREP_FASTA(DEREPLICATE_FASTA.out.fasta)
-
-    joined_strictblast_total_ch = FILTER_BLASTN.out.strict.join(COUNT_DEREP_FASTA.out)
-    joined_looseblast_total_ch = FILTER_BLASTN.out.loose.join(COUNT_DEREP_FASTA.out)
-
-    PLOT_BLASTSTRICT("strict", joined_strictblast_total_ch)
-    PLOT_BLASTLOOSE("loose", joined_looseblast_total_ch)
+    MLST_ELGATO(samples_ch)
+    mlst_files_ch = MLST_ELGATO.out.mlst
+                    .map { sample_id, file -> file }
+                    .collect()
+    MERGE_ELGATO(mlst_files_ch)
 
 
     // ---------------------------
@@ -258,18 +226,7 @@ workflow {
 
         params.kraken2_db,
 
-        params.min_overlap,
-        params.max_overlap,
-        params.dovetail_overlap,
-
-        params.blast_db,
-        params.perc_id,
-        params.loose_id,
-        params.query_cov,
-        params.loose_cov,
-        params.min_qlen,
-        params.loose_qlen,
-        params.delta_bitscore
+        params.elgato_depth
     )
 
     FASTQC_INFO(CREATE_INFO.out)
@@ -284,9 +241,7 @@ workflow {
         PYTHON_INFO(KRAKEN2_INFO.out)
         tmp_out = KRONA_INFO(PYTHON_INFO.out)
     }
-    VSEARCH_INFO(tmp_out)
-    FLASH_INFO(VSEARCH_INFO.out)
-    BLAST_INFO(FLASH_INFO.out)
+    ELGATO_INFO(tmp_out)
 
-    PUBLISH_INFO(BLAST_INFO.out)
+    PUBLISH_INFO(ELGATO_INFO.out)
 }

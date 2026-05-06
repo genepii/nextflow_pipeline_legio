@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import random
 from collections import defaultdict
 
 # -------------------------
@@ -27,11 +28,8 @@ def clean_qseqid(qseqid: str) -> str:
 
 
 def update(best, second, taxon_best, size_dict, taxon_set, count,
-           q, score, taxon, size):
-    """
-    Track best and second best bitscore per query,
-    and store all observed taxa for ambiguity detection.
-    """
+           q, score, taxon, size, best_taxa_all):
+
     count[q] += 1
     taxon_set[q].add(taxon)
 
@@ -40,6 +38,7 @@ def update(best, second, taxon_best, size_dict, taxon_set, count,
         second[q] = float("-inf")
         taxon_best[q] = taxon
         size_dict[q] = size
+        best_taxa_all[q] = {taxon}
         return
 
     if score > best[q]:
@@ -47,26 +46,46 @@ def update(best, second, taxon_best, size_dict, taxon_set, count,
         best[q] = score
         taxon_best[q] = taxon
         size_dict[q] = size
+        best_taxa_all[q] = {taxon}
+
+    elif score == best[q]:
+        best_taxa_all[q].add(taxon)
 
     elif score > second[q]:
         second[q] = score
 
 
-def resolve_taxon(q, taxon_best, taxon_set, best, second, count, delta):
+def resolve_taxon(q, taxon_best, taxon_set, best, second, count, delta, best_taxa_all):
     """
     Final taxonomic resolution:
 
-    Priority:
-    1. Species conflict = ambiguous
+    Special mode:
+    - delta < 0 → take best hit only
+      if multiple best hits (equal score), pick randomly
+
+    Standard mode:
+    1. Species conflict = Legionella spp.
     2. Low score separation = strain=multi
     3. Clean assignment
     """
+
+    # -------------------------
+    # SPECIAL MODE
+    # -------------------------
+    if delta < 0:
+        # taxons with same bitscore
+        candidates = best_taxa_all[q]
+
+        if len(candidates) > 1:
+            return random.choice(list(candidates))
+        else:
+            return next(iter(candidates))
 
     best_taxon = taxon_best[q]
 
     # Case 1: different species detected and weak score separation
     if len(taxon_set[q]) > 1 and (best[q] - second[q]) <= delta:
-        return "L-ambiguous"
+        return "Legionella spp."
 
     # Case 2: same species but weak score separation
     if count[q] > 1 and (best[q] - second[q]) <= delta:
@@ -77,17 +96,29 @@ def resolve_taxon(q, taxon_best, taxon_set, best, second, count, delta):
 
 
 def write_output(outfile, best, second, taxon_best, taxon_set,
-                 size, count, delta):
-    """
-    Write final filtered BLAST table:
-    qseqid, taxon, size
-    """
+                 size, count, delta, best_taxa_all, all_queries):
+
+    written = set()
+
     with open(outfile, "w") as out:
+
+        # -------------------------
+        # With hits
+        # -------------------------
         for q in best:
             final_taxon = resolve_taxon(
-                q, taxon_best, taxon_set, best, second, count, delta
+                q, taxon_best, taxon_set, best, second,
+                count, delta, best_taxa_all
             )
             out.write(f"{clean_qseqid(q)}\t{final_taxon}\t{size[q]}\n")
+            written.add(q)
+
+        # -------------------------
+        # Not_assigned
+        # -------------------------
+        for q in all_queries:
+            if q not in written:
+                out.write(f"{clean_qseqid(q)}\tNot_assigned|Not_assigned\t{extract_size(q)}\n")
 
 
 # -------------------------
@@ -95,6 +126,8 @@ def write_output(outfile, best, second, taxon_best, taxon_set,
 # -------------------------
 
 def main():
+    random.seed(42) #Reproducitbility set
+
     if len(sys.argv) != 11:
         sys.exit(
             "Usage: blast_amplicons_filter_blast.py <blast> <pid> <qcov> <minlen> <delta> "
@@ -124,6 +157,8 @@ def main():
     size_s = {}
     count_s = defaultdict(int)
     taxa_s = defaultdict(set)
+    best_taxa_all_s = defaultdict(set)
+    all_q_s = set()
 
     # -------------------------
     # Containers (loose)
@@ -134,6 +169,8 @@ def main():
     size_l = {}
     count_l = defaultdict(int)
     taxa_l = defaultdict(set)
+    best_taxa_all_l = defaultdict(set)
+    all_q_l = set()
 
     # -------------------------
     # Parse BLAST file
@@ -150,13 +187,15 @@ def main():
             bitscore = float(cols[7])
 
             size = extract_size(qseqid)
+            all_q_s.add(qseqid)
+            all_q_l.add(qseqid)
 
             # -------------------------
             # STRICT FILTER
             # -------------------------
             if qlen >= minlen and qcovhsp >= qcov and pident >= pid:
                 update(best_s, second_s, tax_s, size_s, taxa_s,
-                       count_s, qseqid, bitscore, taxon, size)
+                       count_s, qseqid, bitscore, taxon, size, best_taxa_all_s)
 
             # -------------------------
             # LOOSE FILTER
@@ -166,16 +205,16 @@ def main():
                 pident >= pid_loose):
 
                 update(best_l, second_l, tax_l, size_l, taxa_l,
-                       count_l, qseqid, bitscore, taxon, size)
+                       count_l, qseqid, bitscore, taxon, size, best_taxa_all_l)
 
     # -------------------------
     # Write outputs
     # -------------------------
     write_output(strict_out, best_s, second_s, tax_s, taxa_s,
-                 size_s, count_s, delta)
+            size_s, count_s, delta, best_taxa_all_s, all_q_s)
 
     write_output(loose_out, best_l, second_l, tax_l, taxa_l,
-                 size_l, count_l, delta)
+            size_l, count_l, delta, best_taxa_all_l, all_q_l)
 
 
 if __name__ == "__main__":

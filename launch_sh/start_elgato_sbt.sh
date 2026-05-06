@@ -2,14 +2,14 @@
 
 ################################################################################
 #                                                                              #
-# start_blast_amplicons.sh version 1                                           #
+# start_elgato_sbt.sh version 1                                                #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-04                                        #
+# Aurelie PETICCA, last update: 2026-05                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
-# Aim: Launch for Blastn Amplicons nextflow pipeline                           #
+# Aim: Launch for El Gato Nested SBT nextflow pipeline                         #
 #                                                                              #
-# Usage:  start_blast_amplicons.sh sequencing_ID [options]                     #
+# Usage:  start_elgato_sbt.sh sequencing_ID [options]                          #
 #                                                                              #
 ################################################################################
 
@@ -24,17 +24,17 @@ display_help() {
  	echo >&2
  	echo "   -d,--seq_id    [str]           SEQUENCING_ID, locally a date in format YYYYMMDD, Required" >&2
  	echo "   -c,--config    [path]          nextflow config file to use, by default : 
-                                                <nextflow_folder>/config/blast_amplicons.config" >&2
+                                                <nextflow_folder>/config/elgato_sbt.config" >&2
  	echo "   -i,--input     [path]          folder containing the sequencing data, by default : 
-                                                /srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-{sequencing_ID}" >&2
+                                                /srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Nested-SBT-{sequencing_ID}" >&2
 	echo "   -w,--work      [path]          folder where all the output files will be written, by default : 
-                                                /srv/scratch/iai/bachcl/result/Legionella/23S-5S/{sequencing_ID}/{analyse_id}_Blast-amplicons" >&2
+                                                /srv/scratch/iai/bachcl/result/Legionella/Nested_SBT/{sequencing_ID}/{analyse_id}_ElGato-NestedSbt" >&2
  	echo "   -m,--tmp       [path]          temporary folder where the input files will be stored, by default : 
-                                                /srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S/{sequencing_ID}" >&2
+                                                /srv/scratch/iai/bachcl/Raw_fastq/Legionella/Nested_SBT/{sequencing_ID}" >&2
  	echo "   -s,--save      [path]          folder where the input files will be saved, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/23S-5S/{sequencing_ID}" >&2
+                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Nested_SBT_NGS/{sequencing_ID}" >&2
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_id}_Blast-amplicons" >&2
+                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Nested_SBT/Illumina/{sequencing_ID}/{analyse_id}_ElGato-NestedSbt" >&2
  	echo "   -a,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
  	echo "   -e,--deconta   [True/False]    decontamination of reads against a database, by default : False" >&2
  	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
@@ -82,12 +82,12 @@ analyse_id=""
 
 ## Default values
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-config_file="${script_dir}/../config/blast_amplicons.config"
+config_file="${script_dir}/../config/elgato_sbt.config"
 
-output_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S"
-save_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/23S-5S"
-tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S"
-work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
+output_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Nested_SBT/Illumina"
+save_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Nested_SBT_NGS"
+tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/Nested_SBT"
+work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/Nested_SBT"
 paired_end="true"
 adapters="true"
 deconta="false"
@@ -213,19 +213,19 @@ fi
 
 ## Generate folder names
 if [[ -z "${input_folder}" ]]; then
-    input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-${sequencing_id}"
+    input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Nested-SBT-${sequencing_id}"
 fi
-output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons"
+output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_ElGato-NestedSbt"
 save_folder="${save_folder_prefix}/${sequencing_id}"
 tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
-work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons/work"
-result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplicons"
+work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_ElGato-NestedSbt/work"
+result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_ElGato-NestedSbt"
 
 
 ################################################################################
 # start script
 ## Variables for launching nextflow
-pipeline_file="${script_dir}/../workflow_blast_amplicons.nf"
+pipeline_file="${script_dir}/../workflow_elgato_sbt.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
 echo "START -----------------------------------------------------------------------------------------------------------------"
@@ -262,14 +262,14 @@ echo "--- FINISHED - to SAVE FOLDER --------------------------------------------
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
-## Start Blast analysis
-echo "--- BLAST AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
+## Start Nested analysis
+echo "--- EL GATO NESTED SBT ANALYSIS STARTING ------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ### Notification
-# echo "L'analyse BLAST AMPLICONS du run Legionella-Amplicons-${sequencing_id} est en cours" \
-# | mail -s "Analyse BLAST Legionella-Amplicons-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${sequencing_id} est en cours" \
+# | mail -s "Analyse EL GATO NESTED SBT Legionella-Nested-SBT-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
 if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     -- "${nf_exec}" \
@@ -324,7 +324,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ### Notification
-# echo "L'analyse BLAST AMPLICONS du run Legionella-Amplicons-${sequencing_id} est disponible ici : ${output_folder}" \
-# | mail -s "Analyse BLAST Legionella-Amplicons-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${sequencing_id} est disponible ici : ${output_folder}" \
+# | mail -s "Analyse EL GATO NESTED SBT Legionella-Nested-SBT-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
 echo "END -------------------------------------------------------------------------------------------------------------------"

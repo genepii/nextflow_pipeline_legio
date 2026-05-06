@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 20 ]; then
-    echo "ERROR: 20 arguments expected, got $#"
+if [ "$#" -ne 25 ]; then
+    echo "ERROR: 25 arguments expected, got $#"
     exit 1
 fi
 
@@ -24,16 +24,21 @@ trim_left_f="$9"
 trim_left_r="${10}"
 trunc_len_f="${11}"
 trunc_len_r="${12}"
-n_threads="${13}"
-reads_learn="${14}"
-fold_parents="${15}"
+reads_learn="${13}"
+fold_parents="${14}"
 
-db="${16}"
-reads="${17}"
-taxa="${18}"
+db="${15}"
+reads="${16}"
+taxa="${17}"
 
-confidence="${19}"
-n_jobs="${20}"
+sklearn_confidence="${18}"
+blast_identity="${19}"
+blast_maxaccepts="${20}"
+blast_query_cov="${21}"
+vsearch_identity="${22}"
+vsearch_maxaccepts="${23}"
+vsearch_query_cov="${24}"
+classifier="${25}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -56,22 +61,24 @@ echo ""
 echo "ANALYSIS STRATEGY"
 
 if [ "${paired_end}" = true ]; then
-    echo "Sequencing type : Paired-end (PE)"
+    echo "Sequencing type           : Paired-end (PE)"
 else
-    echo "Sequencing type : Single-end (SE)"
+    echo "Sequencing type           : Single-end (SE)"
 fi
 
 if [ "${all_in_one}" = true ]; then
-    echo "Sample handling : All samples processed together"
+    echo "Sample handling           : All samples processed together"
 else
-    echo "Sample handling : Samples processed separately"
+    echo "Sample handling           : Samples processed separately"
 fi
 
 if [ "${adapters}" = true ]; then
-    echo "Adapters        : Enabled"
+    echo "Adapters                  : Enabled"
 else
-    echo "Adapters        : Disabled"
+    echo "Adapters                  : Disabled"
 fi
+
+echo "Classifier used           : ${classifier}"
 
 echo ""
 
@@ -85,7 +92,6 @@ echo "Trim left forward : ${trim_left_f} (not used if 0)"
 echo "Trim left reverse : ${trim_left_r} (not used if 0)"
 echo "Trunc length F    : ${trunc_len_f}"
 echo "Trunc length R    : ${trunc_len_r}"
-echo "Threads           : ${n_threads}"
 echo "Reads for model   : ${reads_learn}"
 echo "Fold parents      : ${fold_parents}"
 echo ""
@@ -96,9 +102,20 @@ echo "Reference reads   : ${reads}"
 echo "Taxonomy file     : ${taxa}"
 echo ""
 
-echo "TAXONOMIC CLASSIFICATION"
-echo "Confidence threshold : ${confidence}"
-echo "Number of jobs       : ${n_jobs}"
+echo "SKLEARN CLASSIFICATION - taxonomic classification (if sklearn classifier)"
+echo "sklearn confidence threshold : ${sklearn_confidence}"
+echo ""
+
+echo "BLAST CLASSIFICATION - taxonomic classification (if blast classifier)"
+echo "Min. Identity percent : ${blast_identity}"
+echo "Max. number of hits   : ${blast_maxaccepts}"
+echo "Min. query Coverage   : ${blast_query_cov}"
+echo ""
+
+echo "VSEARCH CLASSIFICATION - taxonomic classification (if vsearch classifier)"
+echo "Min. Identity percent : ${vsearch_identity}"
+echo "Max. number of hits   : ${vsearch_maxaccepts}"
+echo "Min. query Coverage   : ${vsearch_query_cov}"
 echo ""
 
 echo "CONFIGURATION COMPLETE"

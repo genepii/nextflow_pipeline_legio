@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 33 ]; then
-    echo "ERROR: 33 arguments expected, got $#"
+if [ "$#" -ne 23 ]; then
+    echo "ERROR: 23 arguments expected, got $#"
     exit 1
 fi
 
@@ -38,18 +38,7 @@ bbtools_downsampled="${21}"
 
 kraken2_db="${22}"
 
-min_overlap="${23}"
-max_overlap="${24}"
-dovetail_overlap="${25}"
-
-blast_db="${26}"
-perc_id="${27}"
-loose_id="${28}"
-query_cov="${29}"
-loose_cov="${30}"
-min_qlen="${31}"
-loose_qlen="${32}"
-delta="${33}"
+elgato_depth="${23}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -57,7 +46,7 @@ software_track_file="pipeline_${suffix}.txt"
 # File content
 # -------------------------
 {
-echo "BLAST - AMPLICONS PIPELINE CONFIGURATION"
+echo "EL GATO - NESTED SBT PIPELINE CONFIGURATION"
 echo ""
 
 echo "Generated: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -103,21 +92,8 @@ echo "KRAKEN2 - taxonomic assignation (used if true)"
 echo "Database : ${kraken2_db}"
 echo ""
 
-echo "MERGED READS - fastq to fasta"
-echo "Min. overlapping      : ${min_overlap}"
-echo "Max. overlapping      : ${max_overlap}"
-echo "Dovetail overlapping  : ${dovetail_overlap}"
-echo ""
-
-echo "BLAST - amplicons identification"
-echo "Database              : ${blast_db}"
-echo "%identity strict      : ${perc_id}"
-echo "%identity loose       : ${loose_id}"
-echo "%coverage strict      : ${query_cov}"
-echo "%coverage loose       : ${loose_cov}"
-echo "Min. qlength strict   : ${min_qlen}"
-echo "Min. qlength loose    : ${loose_qlen}"
-echo "Max bitscore          : ${delta}"
+echo "EL GATO - MLST profile"
+echo "Depth    : ${elgato_depth}"
 echo ""
 
 echo "--------------------------------------------------------------------------------"

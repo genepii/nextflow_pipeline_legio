@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// Processes for workflow_blast_amplicons.nf
+// Processes for workflow_elgato_sbt.nf
 
 
 // -----------------------------------------------------------------------------
@@ -264,7 +264,7 @@ process MPA_MODIF {
     
     script:
     """
-    blast_amplicons_mpa_modified.py ${mpa} ${sample_id}_mpaModif.tsv
+    elgato_sbt_mpa_modified.py ${mpa} ${sample_id}_mpaModif.tsv
     """
 }
 
@@ -338,7 +338,7 @@ process MPA_FAMILY_BARPLOT {
     """
     total=\$(cat ${total_reads} | head -n 1)
 
-    blast_amplicons_mpa_family_barplot.py \
+    elgato_sbt_mpa_family_barplot.py \
         ${mpa_modif} \
         \$total \
         ${sample_id}_familyBarplot.tsv \
@@ -346,211 +346,66 @@ process MPA_FAMILY_BARPLOT {
     """
 }
 
-// -----------------------------------------------------------------------------
-/*
-* Paired-end reads merging 
-* Input   : R1 and R2 FASTQ files
-* Output  : merged sequences in FASTQ format
-* Purpose : reconstruct full amplicon sequences and simplify downstream analysis
-*/
-process MERGE_FASTQ {
-    label 'flash'
-    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
-
-    input:
-        tuple val(sample_id), path(r1), path(r2)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_flashOut/${sample_id}.extendedFrags.fastq.gz"), emit: fasta
-        path("${sample_id}_flashOut")
-
-    script:
-    def dovetail = params.dovetail_overlap ? 
-        "--allow-outies" : 
-        ""
-    """
-    flash ${r1} ${r2} \
-        -d ${sample_id}_flashOut \
-        -o ${sample_id} \
-        -m ${params.min_overlap} \
-        -M ${params.max_overlap}  \
-        --compress \
-        -t ${task.cpus} \
-        ${dovetail}
-    """
-}
-
-/*
-* FASTQ to FASTA conversion
-* Input   : merged FASTQ file
-* Output  : merged sequences in FASTA format
-* Purpose : reconstruct full amplicon sequences and simplify downstream analysis
-*/
-process FASTQ_TO_FASTA {
-    label 'bbtools'
-    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
-
-    input:
-        tuple val(sample_id), path(fastq)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_merged.fasta")
-
-    script:
-    """
-    reformat.sh \
-        in="${fastq}" \
-        out="${sample_id}_merged.fasta" \
-        -Xmx${task.memory.toGiga()}g
-    """
-}
-
-/*
-* Sequence dereplication with abundance tracking
-* Input   : FASTA sequences
-* Output  : dereplicated FASTA with size annotation
-* Purpose : reduce redundancy while preserving sequence counts
-*/
-process DEREPLICATE_FASTA {
-    label 'vsearch'
-    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
-
-    input:
-        tuple val(sample_id), path(fasta)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_derep.fasta"), emit : fasta
-        tuple path("${sample_id}_derep.uc"), path("${sample_id}_derep.log")
-
-    script:
-    """
-    vsearch \
-        --derep_fulllength "${fasta}" \
-        --output "${sample_id}_derep.fasta" \
-        --sizeout \
-        --relabel Seq \
-        --uc "${sample_id}_derep.uc" \
-        --log "${sample_id}_derep.log" \
-        --threads ${task.cpus}
-    """
-}
-
-/*
-* Total sequences count recovery from dereplicated FASTA
-* Input   : dereplicated FASTA file with size annotations (size=)
-* Output  : total number of sequences (sum of all size values)
-* Purpose : reconstruct the original seq count prior to dereplication
-*/
-process COUNT_DEREP_FASTA {
-    label 'python'
-    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
-
-    input:
-        tuple val(sample_id), path(fasta)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_totalseq.txt")
-
-    script:
-    """
-    grep -o "size=[0-9]*" ${fasta} | \
-        sed 's/size=//' | \
-        awk '{s+=\$1} END {print s}' \
-        > "${sample_id}_totalseq.txt"
-    """
-}
 
 // -----------------------------------------------------------------------------
 /*
-* Sequence alignment against reference database
-* Input   : FASTA sequences
-* Output  : BLAST tabular results (TSV)
-* Purpose : assign taxonomy by sequence similarity search
+* Derive Legionella pneumophila MLST profile using el_gato
+* Input   : paired-end reads (R1/R2 FASTQ)
+* Output  : MLST results in TSV format (stdout redirected to file)
+* Purpose : compute sequence type (ST) and allele calls per sample_id from reads
 */
-process BLASTN_FASTA {
-    label 'blast'
-    publishDir "${params.result}/dev/2_Blast", mode: 'copy'
+process MLST_ELGATO {
+    label 'elgato'
+    // PublishDir in config file
 
     input:
-        tuple val(sample_id), path(fasta)
+        tuple val(sample_id), val(r1), val(r2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_blastresults.tsv")
+        tuple val(sample_id),
+            path("${sample_id}_MLST.tsv"), emit: mlst
+        tuple val(sample_id),
+            path("${sample_id}_reads")
 
     script:
     """
-    blastn \
-        -task megablast \
-        -db "${params.blast_db}" \
-        -query "${fasta}" \
-        -out "${sample_id}_blastresults.tsv" \
-        -outfmt "6 qseqid sseqid pident length qlen slen qcovhsp bitscore" \
-        -num_threads ${task.cpus}
+    el_gato.py \
+        --read1 ${r1} \
+        --read2 ${r2} \
+        --sample ${sample_id} \
+        --threads ${task.cpus} \
+        --depth ${params.elgato_depth} \
+        --out ${sample_id}_reads \
+        -w \
+        > ${sample_id}_MLST.tsv
     """
 }
 
-// -----------------------------------------------------------------------------
 /*
-* BLAST filtering and taxonomic assignment with abundance tracking
-* Input   : BLAST TSV results (dereplicated sequences with size in headers)
-* Output  : table TSV (read_id, taxon, size)
-* Purpose : assign one taxon per sequence and preserve abundance information
+* Merge MLST TSV outputs generated by el_gato
+* Input   : multiple per-sample MLST TSV files
+* Output  : single merged and sorted MLST table (TSV)
+* Purpose : aggregate sequence type (ST) and allele calls across all sample_id
 */
-process FILTER_BLASTN {
-    label 'python'
-    publishDir "${params.result}/2_Blast", mode: 'copy'
+process MERGE_ELGATO {
+    label 'elgato'
+    publishDir "${params.result}/2_ElGato", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(blast)
-
+        path(mlst_files)
+    
     output:
-        tuple val(sample_id), path("${sample_id}_strictfiltered.tsv"), emit:strict
-        tuple val(sample_id), path("${sample_id}_loosefiltered.tsv"), emit:loose
+        path("${params.suffix}_allMLST.tsv")
 
     script:
     """
-    blast_amplicons_filter_blast.py \
-        "${blast}" \
-        ${params.perc_id} \
-        ${params.query_cov} \
-        ${params.min_qlen} \
-        ${params.delta_bitscore} \
-        ${params.loose_id} \
-        ${params.loose_cov} \
-        ${params.loose_qlen} \
-        "${sample_id}_strictfiltered.tsv" \
-        "${sample_id}_loosefiltered.tsv"
+    out="${params.suffix}_allMLST.tsv"
+
+    printf "Sample_ID\tST\tflaA\tpilE\tasd\tmip\tmompS\tproA\tneuA_neuAH\n" > \$out
+    cat ${mlst_files} | sort -k1,1 >> \$out
     """
 }
 
-// -----------------------------------------------------------------------------
-/*
-* Sequence counting and visualization
-* Input   : results table TSV (read_id, taxon, size)
-* Output  : graphical summary
-* Purpose : quantify taxa and generate interpretable plots
-*/
-process PLOT_BLASTFILT {
-    label 'python'
-    publishDir "${params.result}/2_Blast", mode: 'copy'
-
-    input:
-        val(filt_type)
-        tuple val(sample_id), path(filtered), path(total_seq)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_${filt_type}Barplot.png")
-
-    script:
-    """
-    total=\$(cat ${total_seq})
-
-    blast_amplicons_plot_blast.py \
-        "${filtered}" \
-        \${total} \
-        "${sample_id}_${filt_type}Barplot.png"
-    """
-}
 
 // -----------------------------------------------------------------------------
 /*
@@ -589,25 +444,14 @@ process CREATE_INFO {
 
         val(kraken2_db)
 
-        val(min_overlap)
-        val(max_overlap)
-        val(dovetail_overlap)
-
-        val(blast_db)
-        val(perc_id)
-        val(loose_id)
-        val(query_cov)
-        val(loose_cov)
-        val(min_qlen)
-        val(loose_qlen)
-        val(delta_bitscore)
+        val(elgato_depth)
 
     output:
         path("pipeline_${suffix}.txt")
 
     script:
     """
-    blast_amplicons_create_info.sh \
+    elgato_sbt_create_info.sh \
         "${suffix}" \
         "${input_dir}" \
         "${result}" \
@@ -630,17 +474,7 @@ process CREATE_INFO {
         "${bbwrap_path}" \
         "${bbtools_downsampled}" \
         "${kraken2_db}" \
-        "${min_overlap}" \
-        "${max_overlap}" \
-        "${dovetail_overlap}" \
-        "${blast_db}" \
-        "${perc_id}" \
-        "${loose_id}" \
-        "${query_cov}" \
-        "${loose_cov}" \
-        "${min_qlen}" \
-        "${loose_qlen}" \
-        "${delta_bitscore}"
+        "${elgato_depth}"
     """
 }
 
@@ -817,67 +651,27 @@ process KRONA_INFO {
     """
 }
 
-process FLASH_INFO {
-    label 'flash'
+process ELGATO_INFO{
+    label 'elgato'
 
     input:
         path(file) 
 
     output: 
-        path("flash_${params.suffix}.txt")
+        path("elgato_${params.suffix}.txt")
 
     script:
     """
-    software_track_file="flash_${params.suffix}.txt"
+    software_track_file="elgato_${params.suffix}.txt"
     cat $file > \$software_track_file
 
     echo "" >> \$software_track_file
 
-    echo "FLASH VERSION" >> \$software_track_file
-    flash -v >> \$software_track_file || true
+    echo "EL GATO VERSION" >> \$software_track_file
+    el_gato.py --version >> \$software_track_file || true
     """
-}
 
-process VSEARCH_INFO {
-    label 'vsearch'
 
-    input:
-        path(file) 
-
-    output: 
-        path("vsearch_${params.suffix}.txt")
-
-    script:
-    """
-    software_track_file="vsearch_${params.suffix}.txt"
-    cat $file > \$software_track_file
-
-    echo "" >> \$software_track_file
-
-    echo "VSEARCH VERSION" >> \$software_track_file
-    vsearch --version >> \$software_track_file || true
-    """
-}
-
-process BLAST_INFO {
-    label 'blast'
-
-    input:
-        path(file) 
-
-    output: 
-        path("blast_${params.suffix}.txt")
-
-    script:
-    """
-    software_track_file="blast_${params.suffix}.txt"
-    cat $file > \$software_track_file
-
-    echo "" >> \$software_track_file
-
-    echo "BLAST+ VERSION" >> \$software_track_file
-    blastn -version >> \$software_track_file || true
-    """
 }
 
 process PUBLISH_INFO {

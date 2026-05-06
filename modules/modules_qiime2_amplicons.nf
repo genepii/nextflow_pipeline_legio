@@ -16,10 +16,10 @@ process IMPORT_REFSEQ {
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
-        val(reads_file)
+        path(reads_file)
 
     output:
-        path "${params.db}.qza"
+        path("${params.db}.qza")
 
     script:
     """
@@ -41,10 +41,10 @@ process IMPORT_TAXA {
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
-        val(taxa_file)
+        path(taxa_file)
 
     output:
-        path "${params.db}_tax.qza"
+        path("${params.db}_tax.qza")
 
     script:
     """
@@ -67,11 +67,11 @@ process GENERATE_CLASSIFIER_BAYES {
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
-        path classifier_reads
-        path classifier_taxa
+        path(classifier_reads)
+        path(classifier_taxa)
 
     output:
-        path "${params.db}_classifier.qza"
+        path("${params.db}_classifier.qza")
 
     script:
     """
@@ -126,10 +126,10 @@ process QC_MULTIQC {
 
     input:
         val(read_type)
-        path fastqc_zip
+        path(fastqc_zip)
 
     output:
-        path "General_multiQC_report.html"
+        path("General_multiQC_report.html")
 
     script:
     """
@@ -159,7 +159,9 @@ process TRIM_FASTP {
             path("${sample_id}_trimR2.fastq.gz")
         
     script:
-    def adapters = params.adapters ? "" : "--disable_adapter_trimming"
+    def adapters = params.adapters ? 
+        "--adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT" : 
+        "--disable_adapter_trimming"
     
     def r1_out = "${sample_id}_trimR1.fastq.gz"
     def r2_out = "${sample_id}_trimR2.fastq.gz"
@@ -190,10 +192,10 @@ process GENERATE_MANIFEST {
     publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), val(r1), val(r2)
+        tuple val(sample_id), val(r1), val(r2), val(reads_learn)
 
     output:
-        tuple val(sample_id), path("${sample_id}_manifest.tsv")
+        tuple val(sample_id), path("${sample_id}_manifest.tsv"), val(reads_learn)
 
     script:
     """
@@ -219,15 +221,19 @@ process GENERATE_MANIFEST_ALL {
     publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(manifests)
+        path(manifests)
+        val(min_reads_learn)
 
     output:
-        tuple val("All-samples"), path("All-samples_manifest.tsv")
+        tuple val("All-samples"), 
+            path("All-samples_manifest.tsv"), 
+            val(min_reads_learn)
 
     script:
     def header = params.paired_end ? 
         "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" : 
         "sample-id\tabsolute-filepath"
+
     """
     echo -e "${header}" > All-samples_manifest.tsv
 
@@ -249,10 +255,10 @@ process IMPORT_MANIFEST {
     publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(manifest)
+        tuple val(sample_id), path(manifest), val(reads_learn)
 
     output:
-        tuple val(sample_id), path("${sample_id}_demux.qza")
+        tuple val(sample_id), path("${sample_id}_demux.qza"), val(reads_learn)
 
     script:
     def type = params.paired_end ? 
@@ -261,6 +267,7 @@ process IMPORT_MANIFEST {
     def format = params.paired_end ? 
         "PairedEndFastqManifestPhred33V2" : 
         "SingleEndFastqManifestPhred33V2"
+
     """
     qiime tools import \
         --input-path ${manifest} \
@@ -281,7 +288,7 @@ process QC_DEMUX {
     publishDir "${params.result}/1_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(demux)
+        tuple val(sample_id), path(demux), val(reads_learn)
 
     output:
         tuple val(sample_id), path("${sample_id}_demux.qzv")
@@ -296,6 +303,31 @@ process QC_DEMUX {
 
 // -----------------------------------------------------------------------------
 /*
+* Total sequences count recovery from trimmed FASTQ
+* Input   : trimmed R1 FASTQ
+* Output  : number of reads
+* Purpose : stop the analysis for sample with not enough reads inside
+*/
+process COUNT_READS {
+    label 'qiime'
+
+    input:
+        tuple val(sample_id), path(r1), path(r2)
+
+    output:
+        tuple val(sample_id), path("${sample_id}_totalseq.txt"), path(r1), path(r2)
+
+    script:
+    """
+    nb_reads=\$(zcat ${r1} | wc -l)
+    nb_reads=\$((nb_reads / 4))
+    echo \$nb_reads > "${sample_id}_totalseq.txt"
+    """
+}
+
+
+// -----------------------------------------------------------------------------
+/*
 * Denoising by DADA2 for 23S–5S amplicons
 * Input   : imported QIIME2 artifact (.qza)
 * Output  : feature table and representative sequences (.qza)
@@ -304,19 +336,20 @@ process QC_DEMUX {
 process DENOISE_DADA2 {
     label 'qiime'
     publishDir "${params.result}/dev/2_Dada2", mode: 'copy'
+    errorStrategy 'ignore'
 
     input:
-        tuple val(sample_id), path(demux)
+        tuple val(sample_id), path(demux), val(reads_learn)
 
     output:
         tuple val(sample_id), 
-            path("${sample_id}_table-dada2_${params.suffix}.qza"), 
+            path("${sample_id}_table-dada2.qza"), 
             emit: table_dada2
         tuple val(sample_id), 
-            path("${sample_id}_stats-dada2_${params.suffix}.qza"), 
+            path("${sample_id}_stats-dada2.qza"), 
             emit: stats_dada2
         tuple val(sample_id), 
-            path("${sample_id}_rep-seqs-dada2_${params.suffix}.qza"), 
+            path("${sample_id}_rep-seqs-dada2.qza"), 
             emit: rep_dada2
 
     script:
@@ -326,16 +359,17 @@ process DENOISE_DADA2 {
     def trunc = params.paired_end ?
         "--p-trunc-len-f ${params.trunc_len_f} --p-trunc-len-r ${params.trunc_len_r}" :
         "--p-trunc-len ${params.trunc_len_f}"
+
     """
     qiime dada2 ${type} \
         --i-demultiplexed-seqs ${demux} \
         ${trunc} \
         --p-min-fold-parent-over-abundance ${params.fold_parents} \
-        --p-n-reads-learn ${params.reads_learn} \
-        --p-n-threads ${params.n_threads} \
-        --o-representative-sequences ${sample_id}_rep-seqs-dada2_${params.suffix}.qza \
-        --o-table ${sample_id}_table-dada2_${params.suffix}.qza \
-        --o-denoising-stats ${sample_id}_stats-dada2_${params.suffix}.qza \
+        --p-n-reads-learn ${reads_learn} \
+        --p-n-threads ${task.cpus} \
+        --o-representative-sequences ${sample_id}_rep-seqs-dada2.qza \
+        --o-table ${sample_id}_table-dada2.qza \
+        --o-denoising-stats ${sample_id}_stats-dada2.qza \
         --verbose
     """
 }
@@ -354,13 +388,13 @@ process QC_DADA2_META {
         tuple val(sample_id), path(stats_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_stats-dada2_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_stats-dada2.qzv")
 
     script:
     """
     qiime metadata tabulate \
         --m-input-file ${stats_dada2} \
-        --o-visualization ${sample_id}_stats-dada2_${params.suffix}.qzv
+        --o-visualization ${sample_id}_stats-dada2.qzv
     """
 }
 
@@ -378,13 +412,13 @@ process QC_DADA2_TABLE {
         tuple val(sample_id), path(table_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_table-dada2_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_table-dada2.qzv")
 
     script:
     """
     qiime feature-table summarize \
         --i-table ${table_dada2} \
-        --o-visualization ${sample_id}_table-dada2_${params.suffix}.qzv
+        --o-visualization ${sample_id}_table-dada2.qzv
     """
 }
 
@@ -402,42 +436,186 @@ process QC_DADA2_REP {
         tuple val(sample_id), path(rep_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_rep-seqs-dada2_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_rep-seqs-dada2.qzv")
 
     script:
     """
     qiime feature-table tabulate-seqs \
         --i-data ${rep_dada2} \
-        --o-visualization ${sample_id}_rep-seqs-dada2_${params.suffix}.qzv
+        --o-visualization ${sample_id}_rep-seqs-dada2.qzv
     """
 }
 
 // -----------------------------------------------------------------------------
 /*
-* Taxonomic classification
+* Taxonomic classification with Bayes classifier
 * Input   : representative sequences
-* Output  : taxonomy artifact
+* Output  : taxonomy artifact + status file
 * Purpose : assign taxonomy using pre-trained classifier
 */
-process TAXA_CLASSIFICATION {
+process SKLEARN_CLASSIFIER {
     label 'qiime'
     publishDir "${params.result}/dev/3_Classification", mode: 'copy'
 
     input:
-        path classifier
+        path(classifier)
         tuple val(sample_id), path(rep_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_taxonomy_${params.suffix}.qza")
+        tuple val(sample_id), 
+            path("${sample_id}_taxonomySklearn.qza"), 
+            path("${sample_id}_statusSklearn.txt"), 
+            emit: taxonomy
 
     script:
     """
+    set +e
+
     qiime feature-classifier classify-sklearn \
         --p-n-jobs ${task.cpus} \
-        --p-confidence ${params.confidence} \
+        --p-confidence ${params.sklearn_confidence} \
         --i-classifier ${classifier} \
         --i-reads ${rep_dada2} \
-        --o-classification "${sample_id}_taxonomy_${params.suffix}.qza"
+        --o-classification "${sample_id}_taxonomySklearn.qza"
+        
+    status=\$?
+
+    if [ \$status -ne 0 ]; then
+        echo "TECH_FAIL" > ${sample_id}_statusSklearn.txt
+        touch "${sample_id}_taxonomySklearn.qza"
+        exit 0
+    fi
+
+    # Content check
+    qiime tools export \
+        --input-path "${sample_id}_taxonomySklearn.qza" \
+        --output-path tmp_export
+
+    if [ ! -s tmp_export/taxonomy.tsv ] || [ \$(wc -l < tmp_export/taxonomy.tsv) -le 1 ]; then
+        echo "NO_HIT" > ${sample_id}_statusSklearn.txt
+    else
+        echo "OK" > ${sample_id}_statusSklearn.txt
+    fi
+    """
+}
+
+/*
+* Taxonomic classification with Blast
+* Input   : representative sequences + reference database
+* Output  : taxonomy assignment (qza) + status file
+* Purpose : assign taxonomy using Blast consensus classifier
+*/
+process BLAST_CLASSIFIER {
+    label 'qiime'
+    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+
+    input:
+        path(reads)
+        path(taxa)
+        tuple val(sample_id), path(rep_dada2)
+
+    output:
+        tuple val(sample_id), 
+            path("${sample_id}_taxonomyBlast.qza"), 
+            path("${sample_id}_statusBlast.txt"), 
+            emit: taxonomy
+        path("${sample_id}_resultsBlast.qza")
+
+    script:
+    """
+    set +e
+
+    qiime feature-classifier classify-consensus-blast \
+        --i-query ${rep_dada2} \
+        --i-reference-reads ${reads} \
+        --i-reference-taxonomy ${taxa} \
+        --p-perc-identity ${params.blast_identity} \
+        --p-maxaccepts ${params.blast_maxaccepts} \
+        --p-query-cov ${params.blast_query_cov} \
+        --p-strand both \
+        --p-num-threads ${task.cpus} \
+        --o-classification "${sample_id}_taxonomyBlast.qza" \
+        --o-search-results "${sample_id}_resultsBlast.qza"
+
+    status=\$?
+
+    if [ \$status -ne 0 ]; then
+        echo "TECH_FAIL" > ${sample_id}_statusBlast.txt
+        touch "${sample_id}_taxonomyBlast.qza"
+        touch "${sample_id}_resultsBlast.qza"
+        exit 0
+    fi
+
+    # Content check
+    qiime tools export \
+        --input-path "${sample_id}_taxonomyBlast.qza" \
+        --output-path tmp_export
+
+    if [ ! -s tmp_export/taxonomy.tsv ] || [ \$(wc -l < tmp_export/taxonomy.tsv) -le 1 ]; then
+        echo "NO_HIT" > ${sample_id}_statusBlast.txt
+    else
+        echo "OK" > ${sample_id}_statusBlast.txt
+    fi
+    """
+}
+
+/*
+* Taxonomic classification with Vsearch
+* Input   : representative sequences + reference database
+* Output  : taxonomy assignment (qza) + status file
+* Purpose : assign taxonomy using vsearch consensus classifier
+*/
+process VSEARCH_CLASSIFIER {
+    label 'qiime'
+    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+
+    input:
+        path(reads)
+        path(taxa)
+        tuple val(sample_id), path(rep_dada2)
+
+    output:
+        tuple val(sample_id),
+            path("${sample_id}_taxonomyVsearch.qza"),
+            path("${sample_id}_statusVsearch.txt"), 
+            emit: taxonomy
+        path("${sample_id}_resultsVsearch.qza")
+
+    script:
+    """
+    set +e
+
+    qiime feature-classifier classify-consensus-vsearch \
+        --i-query ${rep_dada2} \
+        --i-reference-reads ${reads} \
+        --i-reference-taxonomy ${taxa} \
+        --p-perc-identity ${params.vsearch_identity} \
+        --p-maxaccepts ${params.vsearch_maxaccepts} \
+        --p-query-cov ${params.vsearch_query_cov} \
+        --p-strand both \
+        --p-threads ${task.cpus} \
+        --o-classification "${sample_id}_taxonomyVsearch.qza" \
+        --o-search-results "${sample_id}_resultsVsearch.qza"
+
+    status=\$?
+
+    if [ \$status -ne 0 ]; then
+        echo "TECH_FAIL" > ${sample_id}_statusVsearch.txt
+        touch "${sample_id}_taxonomyVsearch.qza"
+        touch "${sample_id}_resultsVsearch.qza"
+        exit 0
+    fi
+
+    # Export check
+    qiime tools export \
+        --input-path "${sample_id}_taxonomyVsearch.qza" \
+        --output-path tmp_export
+
+    if [ ! -s tmp_export/taxonomy.tsv ] || [ \$(wc -l < tmp_export/taxonomy.tsv) -le 1 ]; then
+        echo "NO_HIT" > ${sample_id}_statusVsearch.txt
+    else
+        echo "OK" > ${sample_id}_statusVsearch.txt
+    fi
     """
 }
 
@@ -455,125 +633,162 @@ process TAXA_FILTERING {
         tuple val(sample_id), path(taxa_classified), path(table_dada2)
 
     output:
-       tuple val(sample_id), path(taxa_classified), path("${sample_id}_filtered-table_${params.suffix}.qza")
+        tuple val(sample_id),
+            path(taxa_classified),
+            path("${sample_id}_filtTable.qza"),
+            path("${sample_id}_statusFilter.txt")
 
     script:
     """
+    set +e
+
     qiime taxa filter-table \
         --i-table ${table_dada2} \
         --i-taxonomy ${taxa_classified} \
-        --p-include _ \
-        --o-filtered-table "${sample_id}_filtered-table_${params.suffix}.qza"
+        --p-include '_' \
+        --o-filtered-table ${sample_id}_filtTable.qza
+
+    status=\$?
+
+    if [ \$status -ne 0 ]; then
+        echo "EMPTY" > ${sample_id}_statusFilter.txt
+        touch "${sample_id}_filtTable.qza"
+        exit 0
+    else
+        echo "OK" > ${sample_id}_statusFilter.txt
+    fi
     """
 }
 
 /*
-* Initial taxonomic classification overview (rarefied/unfiltered data)
+* Taxonomic classification overview
 * Input   : DADA2 feature table + taxonomic assignments
 * Output  : taxonomic barplot visualization (.qzv)
-* Purpose : evaluate initial community composition before filtering
+* Purpose : evaluate community composition
 */
-process QC_INIT_CLASSIFICATION {
+process QC_CLASSIFICATION {
     label 'qiime'
     publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
+        val(results_type)
         tuple val(sample_id), path(taxa_classified), path(table_dada2)
 
     output:
-        tuple val(sample_id), 
-            path(taxa_classified), 
-            path("${sample_id}_rartaxa_barplot_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_${results_type}Barplot.qzv")
 
     script:
     """
     qiime taxa barplot \
         --i-table ${table_dada2} \
         --i-taxonomy ${taxa_classified} \
-        --o-visualization "${sample_id}_rartaxa_barplot_${params.suffix}.qzv"
+        --o-visualization "${sample_id}_${results_type}Barplot.qzv"
     """
 }
 
 /*
-* Taxonomic classification after feature filtering
-* Input   : filtered feature table + taxonomic assignments
-* Output  : filtered taxonomic barplot visualization (.qzv)
-* Purpose : assess how filtering impacts community structure representation
+* Export QIIME2 taxonomy artifact for downstream processing
+* Input   : taxonomic assignments
+* Output  : max level taxonomy (.txt)
+* Purpose : extract taxonomy and compute the maximum depth
+*           to safely parameterize Krona (--p-level)
 */
-process QC_FILTERED_CLASSIFICATION {
+process KRONA_TAXA_LEVEL{
     label 'qiime'
-    publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(taxa_classified), path(table_filtered)
+        tuple val(sample_id), path(taxa_classified)
 
     output:
-        tuple val(sample_id), 
-            path(taxa_classified), 
-            path("${sample_id}_filtered_barplot_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_maxLevel.txt")
 
     script:
     """
-    qiime taxa barplot \
-        --i-table ${table_filtered} \
-        --i-taxonomy ${taxa_classified} \
-        --o-visualization "${sample_id}_filtered_barplot_${params.suffix}.qzv"
+    set -euo pipefail
+
+    EXPORT_DIR=${sample_id}_export
+    mkdir -p \$EXPORT_DIR
+
+    # Export taxonomy from QIIME2 artifact
+    qiime tools export \
+        --input-path ${taxa_classified} \
+        --output-path \$EXPORT_DIR
+
+    # Direct path (known structure for FeatureData[Taxonomy])
+    TAX_FILE=\$EXPORT_DIR/taxonomy.tsv
+
+    # Compute max depth
+    awk -F '\\t' '
+    NR > 1 {
+        n = split(\$2, a, ";")
+        count = 0
+        for (i = 1; i <= n; i++) {
+            if (a[i] != "") count++
+        }
+        if (count > max) max = count
+    }
+    END {
+        if (max < 1) max = 1
+        print max
+    }' \$TAX_FILE > ${sample_id}_maxLevel.txt
     """
 }
 
 /*
-* Initial taxonomic composition visualization using Krona (unfiltered data)
+* Taxonomic classification overview
 * Input   : DADA2 feature table + taxonomic assignments
 * Output  : interactive Krona plot (.qzv)
-* Purpose : explore hierarchical taxonomic abundance before filtering
+* Purpose : explore hierarchical taxonomic abundance
 */
-process KRONA_INIT_CLASSIFICATION {
+process KRONA_CLASSIFICATION {
     label 'qiime'
     publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(taxa_classified), path(table_dada2)
+        val(results_type)
+        tuple val(sample_id), path(taxa_classified), path(table_dada2), path(maxlevel)
 
     output:
-        tuple val(sample_id), 
-            path(taxa_classified), 
-            path("${sample_id}_rartaxa_krona_${params.suffix}.qzv")
+        tuple val(sample_id), path("${sample_id}_${results_type}Krona.qzv")
 
     script:
     """
+    max=\$(awk 'NR==1{print \$1}' ${maxlevel})
+
     qiime krona collapse-and-plot \
         --i-table ${table_dada2} \
         --i-taxonomy ${taxa_classified} \
-        --o-krona-plot "${sample_id}_rartaxa_krona_${params.suffix}.qzv"
+        --o-krona-plot ${sample_id}_${results_type}Krona.qzv \
+        --p-level \$max
     """
 }
 
 /*
-* Taxonomic composition visualization using Krona after filtering
-* Input   : filtered feature table + taxonomic assignments
-* Output  : interactive Krona plot (.qzv)
-* Purpose : evaluate hierarchical taxonomy structure after quality filtering
+* Taxonomic classification overview in HTML
+* Input   : interactive Krona plot (.qzv)
+* Output  : interactive Krona plot (.html)
+* Purpose : explore hierarchical taxonomic abundance
 */
-process KRONA_FILT_CLASSIFICATION {
+process KRONA_TO_HTML {
     label 'qiime'
     publishDir "${params.result}/3_Classification", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(taxa_classified), path(table_filtered)
+        val(results_type)
+        tuple val(sample_id), path(krona_qzv)
 
     output:
-        tuple val(sample_id), 
-            path(taxa_classified), 
-            path("${sample_id}_filtered_krona_${params.suffix}.qzv")
+        tuple val(sample_id),
+            path("${sample_id}/${results_type}Krona/*")
 
     script:
     """
-    qiime krona collapse-and-plot \
-        --i-table ${table_filtered} \
-        --i-taxonomy ${taxa_classified} \
-        --o-krona-plot "${sample_id}_filtered_krona_${params.suffix}.qzv"
+    qiime tools export \
+        --input-path ${krona_qzv} \
+        --output-path "${sample_id}/${results_type}Krona"
     """
 }
+
 
 // -----------------------------------------------------------------------------
 /*
@@ -586,34 +801,39 @@ process CREATE_INFO {
     label 'qiime'
 
     input:
-        val input_dir
-        val result_dir
-        val suffix
+        val(input_dir)
+        val(result_dir)
+        val(suffix)
 
-        val paired_end
-        val all_in_one
-        val adapters
+        val(paired_end)
+        val(all_in_one)
+        val(adapters)
 
-        val min_quality
-        val min_length
+        val(min_quality)
+        val(min_length)
 
-        val trim_left_f
-        val trim_left_r
-        val trunc_len_f
-        val trunc_len_r
-        val n_threads
-        val reads_learn
-        val fold_parents
+        val(trim_left_f)
+        val(trim_left_r)
+        val(trunc_len_f)
+        val(trunc_len_r)
+        val(reads_learn)
+        val(fold_parents)
 
-        val db
-        val reads
-        val taxa
+        val(db)
+        val(reads)
+        val(taxa)
 
-        val confidence
-        val n_jobs
+        val(sklearn_confidence)
+        val(blast_identity)
+        val(blast_maxaccepts)
+        val(blast_query_cov)
+        val(vsearch_identity)
+        val(vsearch_maxaccepts)
+        val(vsearch_query_cov)
+        val(classifier)
 
     output:
-        path "pipeline_${suffix}.txt"
+        path("pipeline_${suffix}.txt")
 
     script:
     """
@@ -630,14 +850,19 @@ process CREATE_INFO {
         "${trim_left_r}" \
         "${trunc_len_f}" \
         "${trunc_len_r}" \
-        "${n_threads}" \
         "${reads_learn}" \
         "${fold_parents}" \
         "${db}" \
         "${reads}" \
         "${taxa}" \
-        "${confidence}" \
-        "${n_jobs}"
+        "${sklearn_confidence}" \
+        "${blast_identity}" \
+        "${blast_maxaccepts}" \
+        "${blast_query_cov}" \
+        "${vsearch_identity}" \
+        "${vsearch_maxaccepts}" \
+        "${vsearch_query_cov}" \
+        "${classifier}"
     """
 }
 
@@ -645,10 +870,10 @@ process FASTQC_INFO {
     label 'fastqc'
 
     input:
-        path file 
+        path(file) 
 
     output: 
-        path "fastqc_${params.suffix}.txt"
+        path("fastqc_${params.suffix}.txt")
 
     script:
     """
@@ -666,10 +891,10 @@ process MULTIQC_INFO {
     label 'multiqc'
 
     input:
-        path file 
+        path(file)
 
     output: 
-        path "multiqc_${params.suffix}.txt"
+        path("multiqc_${params.suffix}.txt")
 
     script:
     """
@@ -687,15 +912,17 @@ process QIIME_INFO {
     label 'qiime'
 
     input:
-        path file 
+        path(file)
 
     output: 
-        path "qiime_${params.suffix}.txt"
+        path("qiime_${params.suffix}.txt")
 
     script:
     """
     software_track_file="qiime_${params.suffix}.txt"
     cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
 
     echo "QIIME2" >> \$software_track_file
     qiime info >> \$software_track_file || true
@@ -711,10 +938,10 @@ process FASTP_INFO {
     label 'fastp'
 
     input:
-        path file 
+        path(file)
 
     output: 
-        path "fastp_${params.suffix}.txt"
+        path("fastp_${params.suffix}.txt")
 
     script:
     """
@@ -733,10 +960,10 @@ process PUBLISH_INFO {
     publishDir "${params.result}", mode: 'copy'
 
     input:
-        path file 
+        path(file)
 
     output: 
-        path "softwaresTrackfile_${params.suffix}.txt"
+        path("softwaresTrackfile_${params.suffix}.txt")
 
     script:
     """

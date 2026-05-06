@@ -1,52 +1,75 @@
 Bootstrap: docker
-From: continuumio/miniconda3:latest   # Base image with minimal Conda installation
+From: continuumio/miniconda3:latest
 
 %labels
     Author nextflow_pipeline_legio
-    Version QIIME2-amplicons 2024.10 and Krona  
-    Build reproducible true
+    Version qiime2-2024.10-krona-hpc
 
 %post
-    set -e                            # Stop build on error
+    set -e
 
-    export PATH=/opt/conda/bin:$PATH  # Ensure conda/mamba binaries are available
+    export PATH=/opt/conda/bin:$PATH
 
-    # Update conda and install base tools
+    # ----------------------------
+    # Base tools
+    # ----------------------------
     conda update -n base -c defaults conda -y
     conda install -y -c conda-forge mamba git
 
-    # Create QIIME2 environment from official YAML (reproducible setup)
-    mamba env create -n qiime2-amplicon-2024.10 \
+    # ----------------------------
+    # Shared env location (READ ONLY at runtime)
+    # ----------------------------
+    mamba env create -p /opt/conda/envs/qiime2 \
         --file https://data.qiime2.org/distro/amplicon/qiime2-amplicon-2024.10-py310-linux-conda.yml
 
-    # Activate environment (POSIX-compatible, required in Singularity)
-    . /opt/conda/etc/profile.d/conda.sh
-    conda activate qiime2-amplicon-2024.10
+    # ----------------------------
+    # Krona
+    # ----------------------------
+    mamba install -p /opt/conda/envs/qiime2 -c bioconda krona
 
-    # Install KronaTools (provides ktImportText, required by q2-krona)
-    mamba install -y -c conda-forge -c bioconda krona
+    # ----------------------------
+    # q2-krona (best effort)
+    # ----------------------------
+    mamba run -p /opt/conda/envs/qiime2 pip install --no-cache-dir \
+        git+https://github.com/kaanb93/q2-krona.git || true
 
-    # Install q2-krona plugin from GitHub (not available in QIIME2 channels)
-    pip install git+https://github.com/kaanb93/q2-krona.git
+    mamba run -p /opt/conda/envs/qiime2 qiime dev refresh-cache || true
 
-    # Register newly installed QIIME2 plugins
-    qiime dev refresh-cache
-
-    # Clean conda caches to reduce image size
+    # ----------------------------
+    # Clean build layer only
+    # ----------------------------
     conda clean -afy
+    rm -rf /root/.cache
 
 %environment
-    export PATH=/opt/conda/bin:$PATH  # Ensure conda binaries available at runtime
+    # ----------------------------
+    # Core execution PATH (NO conda activate)
+    # ----------------------------
+    export PATH=/opt/conda/envs/qiime2/bin:/opt/conda/bin:$PATH
 
-    # Redirect caches to /tmp (avoid write errors on read-only $HOME in HPC)
-    export MPLCONFIGDIR=/tmp          # matplotlib config/cache
-    export XDG_CACHE_HOME=/tmp        # general cache location (used by many libs)
-    export NUMBA_CACHE_DIR=/tmp       # numba JIT cache
-    export TMPDIR=/tmp                # temporary files
+    # ----------------------------
+    # Shared HPC scratch base (bind from host)
+    # Each user gets isolated subdir
+    # ----------------------------
+    export HPC_SCRATCH_BASE=/srv/scratch/iai/bachcl/tmp
+    export TMPDIR=${HPC_SCRATCH_BASE}/${USER:-nouser}
 
-    # Activate QIIME2 environment at runtime
-    . /opt/conda/etc/profile.d/conda.sh
-    conda activate qiime2-amplicon-2024.10
+    export HOME=$TMPDIR
+    export XDG_CONFIG_HOME=$TMPDIR/.config
+    export XDG_DATA_HOME=$TMPDIR/.local
+    export XDG_CACHE_HOME=$TMPDIR/.cache
+
+    export MPLCONFIGDIR=$TMPDIR/.matplotlib
+    export NUMBA_CACHE_DIR=$TMPDIR/.numba
+    export QIIME2_CACHE_DIR=$TMPDIR/qiime2
+
+    mkdir -p $TMPDIR $XDG_CONFIG_HOME $XDG_CACHE_HOME $XDG_DATA_HOME $MPLCONFIGDIR $NUMBA_CACHE_DIR $QIIME2_CACHE_DIR 2>/dev/null || true
+
+    # ----------------------------
+    # Conda runtime metadata (no activation)
+    # ----------------------------
+    export CONDA_DEFAULT_ENV=qiime2
+    export CONDA_PREFIX=/opt/conda/envs/qiime2
 
 %runscript
-    exec qiime "$@"                  # Default command: run qiime CLI
+    exec qiime "$@"

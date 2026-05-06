@@ -29,13 +29,23 @@ df = pd.read_csv(
 
 
 # -------------------------
+# Handle empty input file (integrated logic)
+# -------------------------
+if df.empty:
+    df = pd.DataFrame([{
+        "seq": "NA",
+        "taxo": "No_hit",
+        "count": total_seq
+    }])
+
+
+# -------------------------
 # reFormat
 # -------------------------
 # Parse taxonomy
 taxo_split = df["taxo"].str.split("|", expand=True)
 
 df["species"] = taxo_split[0]
-#df["strain"] = taxo_split[1].fillna("strain=NA")
 if 1 in taxo_split.columns:
     df["strain"] = taxo_split[1].fillna("strain=NA")
 else:
@@ -52,21 +62,21 @@ agg = (
 # Add "not assigned"
 # -------------------------
 assigned_sum = agg["count"].sum()
-not_assigned = total_seq - assigned_sum
+no_hit = total_seq - assigned_sum
 
 # No negative value
-if not_assigned < 0:
-    not_assigned = 0
+if no_hit < 0:
+    no_hit = 0
 
-# Add line if not_assigned > 0
-if not_assigned > 0:
+# Add line if no_hit > 0
+if no_hit > 0:
     agg = pd.concat(
         [
             agg,
             pd.DataFrame([{
-                "species": "Not_assigned",
-                "strain": "strain=NA",
-                "count": not_assigned
+                "species": "No_hit",
+                "strain": "No_hit",
+                "count": no_hit
             }])
         ],
         ignore_index=True
@@ -80,8 +90,12 @@ if not_assigned > 0:
 agg["rel_abundance"] = (agg["count"] / total_seq) * 100
 
 
-# Sorting + labels
-agg = agg.sort_values("rel_abundance")
+# Sorting (descending) + keep top 20
+agg = (
+    agg
+    .sort_values("rel_abundance", ascending=False)
+    .head(20)
+)
 
 agg["label"] = agg["species"] + ", " + agg["strain"]
 
@@ -89,11 +103,12 @@ agg["label"] = agg["species"] + ", " + agg["strain"]
 # -------------------------
 # Colors
 # -------------------------
-## Default in deepskyblue3, "Not_assigned" in azure4 
-## and "L-ambiguous" in deepskyblue4
+## Default in deepskyblue3,
+## and "Legionella spp." in deepskyblue4
 colors = [
-    "#838B8B" if sp == "Not_assigned"
-    else "#00688B" if sp == "L-ambiguous"
+    "#555A5A" if sp == "No_hit"
+    else "#7B8181" if sp == "Not_assigned"
+    else "#00688B" if sp == "Legionella spp."
     else "#009ACD"
     for sp in agg["species"]
 ]
@@ -106,6 +121,7 @@ plt.style.use('ggplot')
 
 # Size
 fig, ax = plt.subplots(figsize=(10, 6))
+ax.invert_yaxis()
 
 # Content
 bars = ax.barh(agg["label"], agg["rel_abundance"], color=colors)
@@ -119,7 +135,7 @@ ax.set_ylabel("Species, Strain")
 
 # Title + subtitle
 ax.set_title(
-    f"Taxonomic abundance (including not assigned)\nTotal sequences: {total_seq}",
+    f"Top 20 taxonomic abundance (including not assigned)\nTotal sequences: {total_seq}",
     fontsize=12,
     pad=15
 )

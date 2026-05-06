@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: quay.io/staphb/elgato:1.22.0
+
+%labels
+    Author nextflow_pipeline_legio
+    Version el_gato 1.22.0
+    Build reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    # TMPDIR expected from Nextflow at runtime
+
+%post
+    set -e
+    # base image already contains el_gato 1.22.0
+    # no additional install to preserve reproducibility
+
+%runscript
+    exec el_gato "$@"
