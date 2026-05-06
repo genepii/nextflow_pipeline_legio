@@ -10,6 +10,7 @@ project/
 ├── bin/                scripts for modules files
 ├── config/             config files for Nextflow pipelines
 ├── launch_sh/          bash scripts for launching Nextflow pipelines
+├── img/                images used for ReadMe
 ├── modules/            modules files for Nextflow pipelines
 ├── nextflow_25.10.4    Nextflow executable 
 └── workflows_*         Nextflow main workflows
