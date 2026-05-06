@@ -2,6 +2,14 @@
 
 A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-related data (CNR des Légionelles).
 
+## Information
+
+To ensure simplicity and independence between tools and workflows, each pipeline has its own dedicated files, all of which include the same tag in their filenames for identification purposes. This is a decision made by the laboratory, and it is therefore possible that certain parts or processes may be similar across multiple pipelines.
+
+- `qiime2_amplicons` for the QIIME2 Amplicons Pipeline
+- `blast_amplicons` for the BLASTN Amplicons Pipeline
+- `elgato_sbt` for the EL GATO Nested SBT Pipeline
+
 */!\ The configuration files and values provided here are for information purposes only if the analyses are not run on machines belonging to HCL. The paths and certain options have been configured for those machines, and only the underlying logic and software can be applied in other environments.*
 
 ```
