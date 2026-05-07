@@ -1,0 +1,36 @@
+Bootstrap: docker
+From: eclipse-temurin:17-jre-jammy
+
+%labels
+    Author nextflow_pipeline_legio
+    Version FastQC 0.12.1
+    Build reproducible true
+
+%help
+    FastQC quality control tool for sequencing reads.
+
+%post
+    apt-get update && apt-get install -y \
+        wget \
+        unzip \
+        perl \
+        && rm -rf /var/lib/apt/lists/*
+
+    cd /opt
+    wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
+    unzip fastqc_v0.12.1.zip
+    rm fastqc_v0.12.1.zip
+
+    chmod +x /opt/FastQC/fastqc
+    ln -s /opt/FastQC/fastqc /usr/local/bin/fastqc
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export OMP_NUM_THREADS=1
+
+%runscript
+    exec fastqc "$@"
+
+%test
+    fastqc --version
