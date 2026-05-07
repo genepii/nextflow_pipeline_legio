@@ -86,8 +86,8 @@ save_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fas
 tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/23S-5S"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
 paired_end="true"
-all_in_one="false"
-adapters="false"
+all_in_one="true"
+adapters="true"
 classifier="sklearn"
 analyse_id=$(date +%Y%m%d)
 

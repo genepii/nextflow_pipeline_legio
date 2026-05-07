@@ -126,8 +126,8 @@ By default :
 
 * `-t, --adapters` : enable adaptaters trimming
 
-  * `True` : removes Illumina TruSeq Adapters
-  * `False` : removes only bad quality reads - QPhred and minimum length (`by default`)
+  * `True` : removes Illumina TruSeq Adapters (`by default`)
+  * `False` : removes only bad quality reads - QPhred and minimum length
 
 > Illumina TruSeq Adapter Read 1 :
 > AGATCGGAAGAGCACACGTCTGAACTCCAGTCA 
