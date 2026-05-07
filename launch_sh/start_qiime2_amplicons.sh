@@ -206,11 +206,11 @@ fi
 if [[ -z "${input_folder}" ]]; then
     input_folder="/srv/net/cluqumngs/BDD_COMMUN/Illumina/FASTQ/Legionella-Amplicons-${sequencing_id}"
 fi
-output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90" #TODO : modifier pour remettre le $classifier
+output_folder="${output_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-${classifier}"
 save_folder="${save_folder_prefix}/${sequencing_id}"
 tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
-work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90/work"
-result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-Sklearn90"
+work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-${classifier}/work"
+result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-amplicons-${classifier}"
 
 
 ################################################################################
