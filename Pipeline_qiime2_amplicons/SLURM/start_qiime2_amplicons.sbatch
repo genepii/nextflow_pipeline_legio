@@ -14,21 +14,21 @@ set -e
 
 ################################################################################
 #                                                                              #
-# start_qiime2_amplicons.sh version 1                                          #
+# start_qiime2_amplicons.sbatch version 1                                      #
 #                                                                              #
 # Aurelie PETICCA, last update: 2026-05                                        #
 # Christophe GINEVRA, Camille JACQUELINE                                       #
 #                                                                              #
 # Aim: SLURM launch for Qiime2 Amplicons nextflow pipeline                     #
 #                                                                              #
-# Usage:  sbatch start_qiime2_amplicons.sh -s NGS-WEB_serie [options]          #
+# Usage:  sbatch start_qiime2_amplicons.sbatch -s NGS-WEB_serie [options]      #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch start_qiime2_amplicons.sh -s NGS-WEB_serie [options]" >&2
+    echo "Usage: sbatch start_qiime2_amplicons.sbatch -s NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
     echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
@@ -40,7 +40,7 @@ display_help() {
 }
 
 usage() {
-    echo "Usage: sbatch start_qiime2_amplicons.sh -s <YYYYMMDD> [options]" >&2
+    echo "Usage: sbatch start_qiime2_amplicons.sbatch -s <YYYYMMDD> [options]" >&2
     echo >&2
     echo "Options:" >&2
     echo "  -s             NGS-WEB series (required)" >&2
