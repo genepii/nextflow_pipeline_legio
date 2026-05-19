@@ -1,12 +1,14 @@
 #!/bin/bash
-#SBATCH --time 24:00:00
-#SBATCH --mem=1G
+#SBATCH --time=24:00:00
+#SBATCH --mem=5G
 #SBATCH --cpus-per-task=1
-#SBATCH --gres submitter:1
-#SBATCH --output /srv/scratch/peticcaau/SLURM/%j.out
-#SBATCH --error /srv/scratch/peticcaau/SLURM/%j.err
-#SBATCH --partition diag_iai 
-#SBATCH --nodelist di6182su
+#SBATCH --gres=submitter:1
+#SBATCH --output=/srv/net/cluqumngs/TMP_IAI/redmine/65198/%j.out
+#SBATCH --error=/srv/net/cluqumngs/TMP_IAI/redmine/65198/%j.err
+#SBATCH --comment="El Gato Nested SBT pipeline, SLURM out in redmine/65198"
+#SBATCH --job-name=ElGato-SBT
+#SBATCH --partition=diag_iai
+#SBATCH --nodelist=di6182su
 
 set -e
 
@@ -19,29 +21,31 @@ set -e
 #                                                                              #
 # Aim: SLURM launch for El Gato Nested SBT nextflow pipeline                   #
 #                                                                              #
-# Usage:  sbatch start_elgato_sbt.sh -s NGS-WEB_ID [options]                   #
+# Usage:  sbatch start_elgato_sbt.sh -s NGS-WEB_serie [options]                #
+# WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch start_elgato_sbt.sh -s NGS-WEB_ID [options]" >&2
+    echo "Usage: sbatch start_elgato_sbt.sh -s NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
-    echo "   -s             [str]           NGS-WEB series, locally a date in format YYYYMMDD (required)" >&2
-    echo "   -r             [str]           Slurm job id to rerun (optional)" >&2
+    echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
+ 	echo "   -c             [path]          nextflow config file to use, by default : 
+                                                <nextflow_folder>/config/elgato_sbt.config" >&2
     echo >&2
-    echo "   -h, --help                     print this help message and exit" >&2
+    echo "   -h                             print this help message and exit" >&2
     echo >&2
 }
 
 usage() {
-    echo "Usage: sbatch start_elgato_sbt.sh -s <YYYYMMDD> [options]"
-    echo ""
-    echo "Options:"
-    echo "  -s             NGS-WEB series (required)"
-    echo "  -r             Slurm job id"
-    echo "  -h, --help     Show help"
+    echo "Usage: sbatch start_elgato_sbt.sh -s <YYYYMMDD> [options]" >&2
+    echo >&2
+    echo "Options:" >&2
+    echo "  -s             NGS-WEB series (required)" >&2
+    echo "  -c             Config file" >&2
+    echo "  -h             Show help" >&2
 }
 
 ################################################################################
@@ -54,8 +58,9 @@ pipeline_nf=""
 nf_exec=""
 
 ## Nextflow default values
-script_path="$(scontrol show job "$SLURM_JOB_ID" | awk -F= '/Command=/{print $2}')"
-script_dir="$(dirname "$script_path")"
+# script_path="$(scontrol show job "$SLURM_JOB_ID" | awk -F= '/Command=/{print $2}')"
+# script_dir="$(dirname "$script_path")"
+script_dir="/srv/scratch/DEPOT/pipelines/nextflow_pipeline_legio/Pipeline_elgato_sbt/SLURM"
 config_file="${script_dir}/config/elgato_sbt.config"
 pipeline_nf="${script_dir}/../workflow_elgato_sbt.nf"
 dump_nf="${script_dir}/dump_params.nf"
@@ -64,27 +69,29 @@ nf_exec="${script_dir}/../../nextflow_25.10.4"
 ## User values
 ### Check args presence
 if [ $# -eq 0 ]; then
-    echo "ERROR: NGS-WEB sequencing ID is required"
-    usage
-	echo ""
+    echo "ERROR: NGS-WEB sequencing ID is required" >&2
+    usage >&2
+	echo >&2
     exit 1
 fi
 
 ### Parsing loop
-while getopts ":r:s:h" opt; do
+while getopts ":s:hc:" opt; do
     case ${opt} in
-    r)
-        # [optional] SLURM job number of a failed run to be resumed
-        slurm_job="${OPTARG}"
-        ;;
     s)
         # Name of the NGS-WEB series from which to retrieve the FASTQ files
-        ngsweb_id="${OPTARG}"
+        ngsweb_serie="${OPTARG}"
+        # Extract last 8 characters
+        ngsweb_id="${ngsweb_serie: -8}"
         ;;
     h)
         # Help option
         display_help
         exit 0
+        ;;
+    c)
+        # Config file for dev
+        config_file="${OPTARG}"
         ;;
     :)
         echo "ERROR: Option -${OPTARG} requires an argument" 1>&2
@@ -99,10 +106,15 @@ while getopts ":r:s:h" opt; do
 done
 
 ### Required argument check
-if [[ -z "${ngsweb_id}" ]]; then
-    echo "ERROR: NGS-WEB sequencing ID is required"
+if [[ -z "${ngsweb_serie}" ]]; then
+    echo "ERROR: NGS-WEB serie ID is required" >&2
     usage
-	echo ""
+	echo >&2
+    exit 1
+elif [[ ! "$ngsweb_id" =~ ^[0-9]{8}$ ]]; then
+    echo "Error: NGS-WEB serie ID must end with 8 digits (got: $ngsweb_serie)" >&2
+    usage
+	echo >&2
     exit 1
 fi
 
@@ -148,12 +160,12 @@ fi
 ################################################################################
 # start script
 echo "START -----------------------------------------------------------------------------------------------------------------"
-echo ""
+echo
 
 ## Copy raw data from input server to calculation engine
 echo "--- SAVING INPUT DATA -----------------------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 mkdir -p "${tmp_folder}"
 chmod -R 777 "${tmp_folder}"
@@ -162,11 +174,11 @@ rsync -avQ --ignore-existing \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
-echo ""
+echo
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 ## Copy raw data from input server to storage server
 mkdir -p "${save_folder}"
@@ -175,16 +187,16 @@ rsync -avQ --ignore-existing \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
-echo ""
+echo
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 ## Start Nested analysis
 echo "--- EL GATO NESTED SBT ANALYSIS STARTING ------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 ### Notification
 # echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${ngsweb_id} est en cours" \
@@ -200,24 +212,24 @@ echo ""
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 # Copy results from calculation engine to storage server
 echo "--- SAVING OUTPUT DATA and REMOVING TMP DATA ------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "$result_folder/" "$output_folder/"
-echo ""
+echo
 ### NB : synchronising every files/folders, dev and work not needed
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
@@ -227,7 +239,7 @@ rm -r "${tmp_folder}"
 
 echo "--- FINISHED - to DELETE --------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
-echo ""
+echo
 
 ### Notification
 # echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${ngsweb_id} est disponible ici : ${output_folder}" \

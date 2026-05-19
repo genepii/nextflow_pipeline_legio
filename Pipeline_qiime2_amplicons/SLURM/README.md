@@ -1,10 +1,11 @@
 # QIIME2 Amplicons Pipeline (Nextflow + SLURM)
 
-**[See all the information in the project’s ReadMe; here, only the differences from a standard batch launch are detailed]**
-
-A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-related data (CNR des Légionelles).
+[See all the information in the project’s ReadMe; here, only the differences from a standard batch launch are detailed]
 
 */!\ The configuration files and values provided here are for information purposes only if the analyses are not run on machines belonging to HCL. The paths and certain options have been configured for those machines, and only the underlying logic and software can be applied in other environments.*
+
+**To run the pipeline via NGS-WEB, the nextflow_pipeline_legio repository must be located in the `/srv/scratch/DEPOT/pipelines` directory**
+**and start_\*.sbatch must be placed in the NGS-WEB repository.**
 
 ```
 SLURM/
@@ -23,7 +24,7 @@ It supports single-end and paired-end data, optional adapters trimming, and two 
 #### Run
 
 ```bash
-sbatch start_qiime2_amplicons.sh -s <NGS-WEB_id> [options]
+sbatch start_qiime2_amplicons.sbatch -s <NGS-WEB_id> [options]
 ```
 ---
 

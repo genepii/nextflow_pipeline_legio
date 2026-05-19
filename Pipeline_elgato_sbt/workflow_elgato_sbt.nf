@@ -93,6 +93,11 @@ include {
     QC_MULTIQC as QC_MULTIQC_TRIM
 } from './modules/modules_elgato_sbt.nf'
 
+include { 
+    QC_FASTQC as QC_FASTQC_PROC 
+    QC_MULTIQC as QC_MULTIQC_PROC
+} from './modules/modules_elgato_sbt.nf'
+
 
 // -----------------------------------------------------------------------------
 // WORKFLOW
