@@ -30,5 +30,5 @@ sbatch start_qiime2_amplicons.sbatch -s <NGS-WEB_id> [options]
 
 #### Required
 
-* `-s` : sequencing run ID / NGS-WEB series (ex: for "Legionella-Amplicons-20260331", run_ID = 20260331)
+* `-s` : NGS-WEB series (ex: "Legionella-Amplicons-20260331")
 

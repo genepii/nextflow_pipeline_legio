@@ -32,4 +32,4 @@ sbatch start_elgato_sbt.sbatch -s <NGS-WEB_id> [options]
 
 #### Required
 
-* `-s` : sequencing run ID / NGS-WEB series (ex: for "Legionella-Nested-SBT-20260331", run_ID = 20260331)
+* `-s` : NGS-WEB series (ex: "Legionella-Nested-SBT-20260331")
