@@ -10,6 +10,7 @@
 #SBATCH --partition=diag_iai
 #SBATCH --nodelist=di6182su
 #SBATCH --account=iai
+#SBATCH --constraint=public,dump
 
 set -e
 
