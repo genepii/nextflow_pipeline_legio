@@ -8,10 +8,10 @@ nextflow.enable.dsl=2
 // -----------------------------------------------------------------------------
 
 workflow {
-    println params.input_dir
-    println params.output_dir
-    println params.save_dir
-    println params.tmp_dir
-    println workflow.workDir
-    println params.result
+    println "input_dir=${params.input_dir}"
+    println "output_dir=${params.output_dir}"
+    println "save_dir=${params.save_dir}"
+    println "tmp_dir=${params.tmp_dir}"
+    println "work_dir=${workflow.workDir}"
+    println "result=${params.result}"
 }

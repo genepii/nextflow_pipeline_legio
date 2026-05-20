@@ -12,6 +12,9 @@
 
 set -e
 
+# In local storage allocated by SLURM 
+cd $SCRATCH
+
 ################################################################################
 #                                                                              #
 # start_elgato_sbt.sbatch version 1                                            #
@@ -65,6 +68,11 @@ config_file="${script_dir}/config/elgato_sbt.config"
 pipeline_nf="${script_dir}/../workflow_elgato_sbt.nf"
 dump_nf="${script_dir}/dump_params.nf"
 nf_exec="${script_dir}/../../nextflow_25.10.4"
+
+### Launch-specific configuration  
+clusterOptions="--account=\"${SLURM_JOB_ACCOUNT}\" \
+--partition=\"${SLURM_JOB_PARTITION}\" \
+--nodelist=\"${SLURM_JOB_NODELIST}\""
 
 ## User values
 ### Check args presence
@@ -123,7 +131,8 @@ mapfile -t paths < <(
     "${nf_exec}" run "${dump_nf}" \
         -c "${config_file}" \
         --suffix "${ngsweb_id}" \
-        2>&1 | grep '^/'
+        --clusterOptions "${clusterOptions}" \
+        2>&1 | grep -E '^.*=' | cut -d= -f2-
 )
 input_folder="${paths[0]}"
 output_folder="${paths[1]}"
@@ -136,6 +145,12 @@ result_folder="${paths[5]}"
 for d in "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
     if [[ -z "$d" ]]; then
         echo "ERROR: One of the required paths is empty" >&2
+        echo "output_folder : ${output_folder}" >&2
+        echo "save_folder   : ${save_folder}" >&2
+        echo "tmp_folder    : ${tmp_folder}" >&2
+        echo "work_folder   : ${work_folder}" >&2
+        echo "result_folder : ${result_folder}" >&2
+        echo >&2
         exit 1
     fi
     mkdir -p "$d"
@@ -207,8 +222,9 @@ echo
     run "${pipeline_nf}" \
     --suffix "${ngsweb_id}" \
     -profile slurm \
-    -with-trace "${result_folder}/trace_${ngsweb_id}.txt" \
-    -with-report "${result_folder}/report_${ngsweb_id}.html"
+    --clusterOptions "${clusterOptions}" \
+    -with-trace "${SCRATCH}/nextflow_${ngsweb_id}.txt" \
+    -with-report "${SCRATCH}/nextflow_${ngsweb_id}.html"
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
