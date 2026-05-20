@@ -9,6 +9,7 @@
 #SBATCH --job-name=Qiime2-amplicons
 #SBATCH --partition=diag_iai
 #SBATCH --nodelist=di6182su
+#SBATCH --account=iai
 
 set -e
 

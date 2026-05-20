@@ -9,6 +9,7 @@
 #SBATCH --job-name=Blast-amplicons
 #SBATCH --partition=diag_iai
 #SBATCH --nodelist=di6182su
+#SBATCH --account=iai
 
 set -e
 
