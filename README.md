@@ -32,3 +32,76 @@ Pipeline_*/
 ├── start_*             bash script for launching Nextflow pipelines in LOCAL mode
 └── workflow_*          Nextflow main workflows
 ```
+
+---
+
+## User instructions for HCL pipeline execution (SLURM / local)
+
+This document clarifies the essential rules for running the pipelines in the HCL context. The order below follows operational priority and execution safety.
+
+---
+
+### 1. SLURM execution requirements (NGS-WEB or direct submission)
+
+When launching in SLURM mode (via NGS-WEB or manual submission), the following rules must be strictly respected:
+
+* The run serial number **must end with 8 digits in the format `YYYYMMDD`**.
+* Input data must be stored in the correct project:
+
+  * `Legionella-Amplicons` for Blast or Qiime2 pipelines
+  * `Legionella-Nested-SBT` for El Gato pipelines
+* When launched via NGS-WEB:
+
+  * Only the version of the script stored in the INRIA GitLab repository is executed.
+  * The local copy in this repository is provided only for grouping, traceability, and backup purposes.
+
+---
+
+### 2. Configuration-driven execution (no script modification required via NGS-WEB)
+
+All input/output paths and software parameters are fully defined by the configuration file:
+
+* No modification of pipeline scripts is required to adapt an analysis.
+* Changing analysis settings is done exclusively via the config file.
+* When not using NGS-WEB, a different config file than the default can be provided at submission time using `sbatch` options (see `-h` or pipeline README).
+    * In this case, certain paths are specified in the configuration file by the launch script; further details can be found in the linked files.
+
+---
+
+### 3. Local and SLURM input data rules
+
+These rules apply in both execution modes:
+
+* Input files must be `fastq` or `fastq.gz`.
+* Paired-end data must contain `R1` and `R2` in filenames.
+* File naming convention:
+
+  * If an underscore `_` exists in the filename, only the part before the first `_` is used for downstream naming.
+  * Otherwise, the full filename is used.
+
+---
+
+### 4. Configuration file usage
+
+* Separate configuration files are used for:
+
+  * LOCAL execution
+  * SLURM execution
+* It is essential to use the correct configuration format depending on the execution mode.
+* File hierarchy and internal descriptions clearly indicate ownership and usage context.
+
+---
+
+### 5. Documentation and user support
+
+* A help command is available via `-h` for all pipelines.
+* README files are provided for both users and developers.
+* These resources should be consulted before modifying or extending pipeline usage.
+
+---
+
+### 6. Data backup and storage policy
+
+* Input and output data are backed up across different servers.
+* This mechanism was initially introduced for development needs.
+* It may evolve or be simplified in future versions of the pipeline.

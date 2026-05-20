@@ -33,3 +33,7 @@ sbatch start_elgato_sbt.sbatch -s <NGS-WEB_id> [options]
 #### Required
 
 * `-s` : NGS-WEB series (ex: "Legionella-Nested-SBT-20260331")
+
+#### Help to developpers
+
+* `-c` : path to a new nextflow config file, for developping new parameters

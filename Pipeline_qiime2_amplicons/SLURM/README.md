@@ -32,3 +32,6 @@ sbatch start_qiime2_amplicons.sbatch -s <NGS-WEB_id> [options]
 
 * `-s` : NGS-WEB series (ex: "Legionella-Amplicons-20260331")
 
+#### Help to developpers
+
+* `-c` : path to a new nextflow config file, for developping new parameters
