@@ -126,7 +126,7 @@ elif [[ ! "$ngsweb_id" =~ ^[0-9]{8}$ ]]; then
     exit 1
 fi
 
-## Retrieving paths from nextflow config, need to start with "/"
+## Retrieving paths from nextflow config, contains "="
 mapfile -t paths < <(
     "${nf_exec}" run "${dump_nf}" \
         -c "${config_file}" \
@@ -141,33 +141,34 @@ tmp_folder="${paths[3]}"
 work_folder="${paths[4]}"
 result_folder="${paths[5]}"
 
-# If path empty error
-for d in "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
+### If path empty error
+for d in "${input_folder}" "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
     if [[ -z "$d" ]]; then
         echo "ERROR: One of the required paths is empty" >&2
-        echo "output_folder : ${output_folder}" >&2
-        echo "save_folder   : ${save_folder}" >&2
-        echo "tmp_folder    : ${tmp_folder}" >&2
-        echo "work_folder   : ${work_folder}" >&2
-        echo "result_folder : ${result_folder}" >&2
+        echo "     input_folder/input_dir   : ${input_folder}" >&2
+        echo "     output_folder/output_dir : ${output_folder}" >&2
+        echo "     save_folder/save_dir     : ${save_folder}" >&2
+        echo "     tmp_folder/tmp_dir       : ${tmp_folder}" >&2
+        echo "     work_folder/workDir      : ${work_folder}" >&2
+        echo "     result_folder/result     : ${result_folder}" >&2
         echo >&2
         exit 1
     fi
     mkdir -p "$d"
 done
 
-# Check input_folder contains FASTQ files
-if [[ -z "${input_folder}" ]]; then
-    echo "ERROR: No input_folder given" >&2
+### Check input_folder exists
+if [[ ! -d "${input_folder}" ]]; then
+    echo "ERROR: input_folder/input_dir does not exist: ${input_folder}" >&2
+    echo "     Please verify the path and consider re-downloading the data." >&2
     exit 1
 fi
 
+### Check input_folder contains FASTQ files
 shopt -s nullglob
-
 fastq_files=( "${input_folder}"/*.fastq "${input_folder}"/*.fastq.gz )
-
 if [[ ${#fastq_files[@]} -eq 0 ]]; then
-    echo "ERROR: No FASTQ or FASTQ.GZ files found in input_folder: ${input_folder}" >&2
+    echo "ERROR: No FASTQ or FASTQ.GZ files found in input_folder/input_dir: ${input_folder}" >&2
     exit 1
 fi
 
