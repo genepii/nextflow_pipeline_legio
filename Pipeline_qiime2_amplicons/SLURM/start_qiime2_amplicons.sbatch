@@ -35,7 +35,7 @@ display_help() {
     echo >&2
     echo >&2
     echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
- 	echo "   -c             [path]          nextflow config file to use, by default : 
+    echo "   -c             [path]          nextflow config file to use, by default : 
                                                 <nextflow_folder>/config/qiime2_amplicons.config" >&2
     echo >&2
     echo "   -h                             print this help message and exit" >&2
@@ -77,9 +77,10 @@ clusterOptions="--account=\"${SLURM_JOB_ACCOUNT}\" \
 ## User values
 ### Check args presence
 if [ $# -eq 0 ]; then
+    echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
     echo "ERROR: NGS-WEB sequencing ID is required" >&2
     usage >&2
-	echo >&2
+    echo >&2
     exit 1
 fi
 
@@ -102,11 +103,13 @@ while getopts ":s:hc:" opt; do
         config_file="${OPTARG}"
         ;;
     :)
-        echo "ERROR: Option -${OPTARG} requires an argument" 1>&2
+        echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
+        echo "ERROR: Option -${OPTARG} requires an argument" >&2
         exit 1
         ;;
     \?)
-        echo "ERROR: Unknown option -${OPTARG}" 1>&2
+        echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
+        echo "ERROR: Unknown option -${OPTARG}" >&2
         usage
         exit 1
         ;;
@@ -115,14 +118,16 @@ done
 
 ### Required argument check
 if [[ -z "${ngsweb_serie}" ]]; then
+    echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
     echo "ERROR: NGS-WEB serie ID is required" >&2
     usage
-	echo >&2
+    echo >&2
     exit 1
 elif [[ ! "$ngsweb_id" =~ ^[0-9]{8}$ ]]; then
+    echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
     echo "Error: NGS-WEB serie ID must end with 8 digits (got: $ngsweb_serie)" >&2
     usage
-	echo >&2
+    echo >&2
     exit 1
 fi
 
@@ -144,6 +149,7 @@ result_folder="${paths[5]}"
 ### If path empty error
 for d in "${input_folder}" "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
     if [[ -z "$d" ]]; then
+        echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
         echo "ERROR: One of the required paths is empty" >&2
         echo "     input_folder/input_dir   : ${input_folder}" >&2
         echo "     output_folder/output_dir : ${output_folder}" >&2
@@ -163,6 +169,7 @@ done
 
 ### Check input_folder exists
 if [[ ! -d "${input_folder}" ]]; then
+    echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
     echo "ERROR: input_folder/input_dir does not exist: ${input_folder}" >&2
     echo "     Please verify the path and consider re-downloading the data." >&2
     exit 1
@@ -172,6 +179,7 @@ fi
 shopt -s nullglob
 fastq_files=( "${input_folder}"/*.fastq "${input_folder}"/*.fastq.gz )
 if [[ ${#fastq_files[@]} -eq 0 ]]; then
+    echo "Pipeline QIIME2-amplicons, $(date '+%d/%m/%Y %H:%M:%S')" >&2
     echo "ERROR: No FASTQ or FASTQ.GZ files found in input_folder/input_dir: ${input_folder}" >&2
     exit 1
 fi
