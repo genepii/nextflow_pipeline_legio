@@ -154,6 +154,10 @@ for d in "${input_folder}" "${output_folder}" "${save_folder}" "${tmp_folder}" "
         echo >&2
         exit 1
     fi
+done
+
+### Create output paths
+for d in "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
     mkdir -p "$d"
 done
 
