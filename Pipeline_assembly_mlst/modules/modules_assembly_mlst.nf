@@ -1506,7 +1506,8 @@ process VISU_REPORTREE {
         path(metadata_tsv)
 
     output:
-        path("${strain}_${nb}genes/*")
+        path("${strain}_${nb}genes/*"), emit: folder
+        path("${strain}_${nb}genes_partitions.tsv"), emit: partition
 
     script:
     """
@@ -1566,8 +1567,8 @@ process VISU_REPORTREE {
         \$zoom_opts \
         \$threshold_opts
 
-    cp ${strain}${nb}genes_partitions.tsv ${strain}_${nb}genes_partitions.tsv
-    mv ${strain}${nb}genes* ${strain}_${nb}genes/.
+    mv * ${strain}_${nb}genes/.
+    cp ${strain}_${nb}genes/${strain}${nb}genes_partitions.tsv ${strain}_${nb}genes_partitions.tsv
     """
 }
 
