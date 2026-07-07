@@ -1,0 +1,166 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%labels
+    Author HPC-bioinfo
+    Description mompS stable HPC container (no interactive install, BLAST 2.4.0+)
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+    export MOMP_HOME=/opt/mompS
+
+    export BLAST_HOME=/opt/ncbi-blast
+    export PATH=/opt/ncbi-blast/bin:/usr/local/bin:$PATH
+
+    export BWA_HOME=/opt/bwa
+    export SAMTOOLS_HOME=/opt/samtools
+    export FREEBAYES_HOME=/opt/freebayes
+
+    export BLASTDB=/opt/blastdb
+
+%post
+    set -eu
+
+    # =========================================================
+    # NON-INTERACTIVE MODE (CRITICAL HPC FIX)
+    # =========================================================
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=Etc/UTC
+
+    # =========================================================
+    # System dependencies (COMPILATION SAFE)
+    # =========================================================
+    apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        perl \
+        wget \
+        ca-certificates \
+        tar \
+        gzip \
+        unzip \
+        build-essential \
+        openjdk-8-jre \
+        tzdata \
+        zlib1g-dev \
+        libbz2-dev \
+        liblzma-dev \
+        libncurses5-dev \
+        libboost-all-dev \
+        make \
+        cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+    mkdir -p /opt /opt/blastdb
+
+    # =========================================================
+    # MINICONDA INSTALL (required for bioconda tools)
+    # =========================================================
+
+    cd /opt
+    wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+    rm Miniconda3-latest-Linux-x86_64.sh
+
+    export PATH=/opt/conda/bin:$PATH
+
+    /opt/conda/bin/conda config --set always_yes yes
+    /opt/conda/bin/conda config --set changeps1 no
+
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+    /opt/conda/bin/conda update -n base -c defaults conda -y
+
+    # =========================================================
+    # BLAST 2.4.0+ (HARD PIN for mompS compatibility)
+    # =========================================================
+    cd /opt
+    wget -q https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.4.0/ncbi-blast-2.4.0+-x64-linux.tar.gz
+    tar -xzf ncbi-blast-2.4.0+-x64-linux.tar.gz
+    mv ncbi-blast-2.4.0+ ncbi-blast
+    rm ncbi-blast-2.4.0+-x64-linux.tar.gz
+
+    ln -s /opt/ncbi-blast/bin/* /usr/local/bin/ || true
+
+    # =========================================================
+    # BWA 0.7.5a (legacy but required for mompS context)
+    # =========================================================
+    cd /opt
+    wget -q https://sourceforge.net/projects/bio-bwa/files/bwa-0.7.5a.tar.bz2
+    tar -xjf bwa-0.7.5a.tar.bz2
+    cd bwa-0.7.5a
+    make
+    cd ..
+    mv bwa-0.7.5a bwa
+
+    ln -s /opt/bwa/bwa /usr/local/bin/
+
+    # =========================================================
+    # SAMTOOLS 1.3.1 (HTS legacy stack)
+    # =========================================================
+    cd /opt
+    wget -q https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2
+    tar -xjf samtools-1.3.1.tar.bz2
+    cd samtools-1.3.1
+    make
+    cd ..
+    mv samtools-1.3.1 samtools
+
+    ln -s /opt/samtools/samtools /usr/local/bin/
+
+    # =========================================================
+    # PICARD 1.139 (Java legacy tool)
+    # =========================================================
+    cd /opt
+    wget -q https://github.com/broadinstitute/picard/releases/download/1.139/picard-tools-1.139.zip
+    unzip picard-tools-1.139.zip
+    mv picard-tools-1.139 picard
+    rm picard-tools-1.139.zip
+
+    echo '#!/bin/bash
+java -Djava.io.tmpdir=/tmp -jar /opt/picard/picard.jar "$@"' > /usr/local/bin/picard
+    chmod +x /usr/local/bin/picard
+
+    # =========================================================
+    # FREEBAYES (precompiled via conda, HPC-safe)
+    # =========================================================
+    /opt/conda/bin/conda install -y -c bioconda -c conda-forge freebayes=1.0.2
+
+    # expose binary
+    ln -s /opt/conda/bin/freebayes /usr/local/bin/freebayes || true
+
+    # =========================================================
+    # mompS installation
+    # =========================================================
+    cd /opt
+    git clone https://github.com/bioinfo-core-BGU/mompS.git
+
+    find /opt/mompS -type f -name "*.pl" -exec chmod +x {} \;
+
+    # =========================================================
+    # BLAST DB directory (MUST be mounted externally)
+    # =========================================================
+    mkdir -p /opt/blastdb
+
+    # =========================================================
+    # SANITY CHECKS (fail early if broken)
+    # =========================================================
+    perl --version
+    blastn -version
+    bwa 2>&1 | head -n 1
+    samtools --version
+
+    # =========================================================
+    # CLEANUP
+    # =========================================================
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    export MOMP_HOME=/opt/mompS
+    export BLASTDB=/opt/blastdb
+    export PATH=/usr/local/bin:/opt/ncbi-blast/bin:$PATH
+
+    exec "$@"

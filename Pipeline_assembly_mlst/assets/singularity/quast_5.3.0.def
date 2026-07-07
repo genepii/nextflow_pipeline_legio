@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: quay.io/biocontainers/quast:5.3.0--py313pl5321h5ca1c30_2
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool QUAST assembly quality assessment
+    Version 5.3.0
+    Build py313pl5321h5ca1c30_2 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export MPLBACKEND=Agg
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
+    quast.py --version > /quast.version.txt
+
+%runscript
+    exec "$@"
+
+%test
+    quast.py --version

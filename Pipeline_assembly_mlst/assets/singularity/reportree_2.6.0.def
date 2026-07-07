@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: quay.io/mdhhs_bioinformatics/reportree:2.6.0-fixed
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool ReporTree
+    Version 2.6.0-fixed
+    Build biocontainers fixed
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
+    reportree.py --version > /reportree.version.txt 2>/dev/null || true
+
+%runscript
+    exec "$@"
+
+%test
+    reportree.py --version

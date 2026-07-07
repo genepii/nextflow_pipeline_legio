@@ -1,0 +1,85 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool GrapeTree
+    Source https://github.com/achtman-lab/GrapeTree
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update && apt-get install -y \
+        git \
+        gcc \
+        g++ \
+        make \
+        procps \
+        ca-certificates \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Install GrapeTree from official repository
+    mkdir -p /opt
+    cd /opt
+
+    pip install --no-cache-dir --upgrade pip setuptools wheel
+
+    # Scientific stack REQUIRED by Grapetree
+    pip install --no-cache-dir \
+        numpy \
+        pandas \
+        scipy \
+        matplotlib \
+        requests \
+        biopython \
+        scikit-learn
+
+    # Install GrapeTree from official repo
+    git clone https://github.com/achtman-lab/GrapeTree.git
+    cd GrapeTree
+
+    pip install --no-cache-dir -r requirements.txt || true
+
+    find binaries -type f -exec chmod +x {} \;
+
+    pip install --no-cache-dir .
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+    export MPLBACKEND=Agg
+
+    # Respect Nextflow-provided scratch directory
+    export TMPDIR="${TMPDIR:-$HOME}"
+    export TMP="${TMPDIR}"
+    export TEMP="${TMPDIR}"
+
+    # Prevent caches from using /tmp
+    export XDG_CACHE_HOME="${TMPDIR}/.cache"
+    export MPLCONFIGDIR="${TMPDIR}/.matplotlib"
+    export PYTHONPYCACHEPREFIX="${TMPDIR}/.pycache"
+
+%runscript
+    export TMPDIR="${TMPDIR:-$HOME}"
+    export TMP="${TMPDIR}"
+    export TEMP="${TMPDIR}"
+
+    export XDG_CACHE_HOME="${TMPDIR}/.cache"
+    export MPLCONFIGDIR="${TMPDIR}/.matplotlib"
+    export PYTHONPYCACHEPREFIX="${TMPDIR}/.pycache"
+
+    mkdir -p "${XDG_CACHE_HOME}"
+    mkdir -p "${MPLCONFIGDIR}"
+    mkdir -p "${PYTHONPYCACHEPREFIX}"
+
+    exec "$@"
+
+%test
+    python --version
+
+    python - <<'EOF'
+import tempfile
+print("TMPDIR =", tempfile.gettempdir())
+EOF

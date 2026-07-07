@@ -1,0 +1,32 @@
+Bootstrap: docker
+From: quay.io/biocontainers/samtools:1.23.1--ha83d96e_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool samtools
+    Version 1.23.1
+    Build ha83d96e_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1
+
+%post
+    # Minimal runtime utilities for HPC robustness
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        coreutils \
+        gzip \
+        bzip2 \
+        xz-utils \
+        && rm -rf /var/lib/apt/lists/*
+
+    samtools --version > /samtools.version.txt
+
+%runscript
+    exec "$@"
+
+%test
+    samtools --version

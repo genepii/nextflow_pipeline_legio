@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: quay.io/biocontainers/chewbbaca:3.5.4--pyh106432d_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool chewBBACA
+    Version 3.5.4
+    Build pyh106432d_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export MPLBACKEND=Agg
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
+    chewBBACA.py --version > /chewbbaca.version.txt
+
+%runscript
+    exec "$@"
+
+%test
+    chewBBACA.py --version

@@ -1,0 +1,19 @@
+Bootstrap: docker
+From: quay.io/biocontainers/minimap2:2.31--h118bc1c_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool minimap2 alignment module
+    Version 2.31
+    Build h118bc1c_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%runscript
+    exec "$@"
+
+%test
+    minimap2 --version

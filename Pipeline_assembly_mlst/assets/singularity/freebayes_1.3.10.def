@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: quay.io/biocontainers/freebayes:1.3.10--hbefcdb2_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool freebayes variant caller
+    Version 1.3.10
+    Build hbefcdb2_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        coreutils \
+        gzip \
+        bzip2 \
+        xz-utils \
+        bc \
+        && rm -rf /var/lib/apt/lists/*
+
+    freebayes --version > /freebayes.version.txt || true
+
+%runscript
+    exec "$@"
+
+%test
+    freebayes --version

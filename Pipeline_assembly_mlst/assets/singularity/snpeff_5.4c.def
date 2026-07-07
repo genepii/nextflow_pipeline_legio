@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: quay.io/biocontainers/snpeff:5.4.0c--hdfd78af_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool snpEff variant annotation
+    Version 5.4.0c
+    Build hdfd78af_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export JAVA_OPTS="-Xmx4g"
+
+%runscript
+    exec "$@"
+
+%test
+    snpEff -version

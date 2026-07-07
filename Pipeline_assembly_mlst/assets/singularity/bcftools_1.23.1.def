@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: quay.io/biocontainers/bcftools:1.23.1--hb2cee57_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool bcftools variant calling toolkit
+    Version 1.23.1
+    Build hb2cee57_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%post
+    # Minimal HPC utilities only
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
+    bcftools --version > /bcftools.version.txt
+
+%runscript
+    exec "$@"
+
+%test
+    bcftools --version

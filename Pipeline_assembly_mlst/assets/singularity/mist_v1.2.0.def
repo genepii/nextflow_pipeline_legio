@@ -1,0 +1,42 @@
+Bootstrap: docker
+From: condaforge/miniforge3:24.11.3-0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool MiST
+    Version 1.2.0
+    Package mist_typing=1.2.0
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1
+    export PATH=/opt/conda/envs/mist_env/bin:$PATH
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        coreutils \
+        gzip \
+        bzip2 \
+        xz-utils \
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+    conda create -y -n mist_env \
+        -c conda-forge \
+        -c bioconda \
+        python=3.11 \
+        mist_typing=1.2.0
+
+    conda clean -afy
+
+    /opt/conda/envs/mist_env/bin/mist --help \
+        > /MiST.version.txt || true
+
+%runscript
+    exec "$@"
+
+%test
+    /opt/conda/envs/mist_env/bin/mist --help

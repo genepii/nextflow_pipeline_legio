@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: quay.io/biocontainers/coreprofiler:2.0.0--pyhdfd78af_0
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool coreprofiler
+    Version 2.0.0
+    Build pyhdfd78af_0 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PYTHONUNBUFFERED=1
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        coreutils \
+        gzip \
+        bzip2 \
+        xz-utils \
+        bc \
+        && rm -rf /var/lib/apt/lists/*
+
+    coreprofiler --help > /coreprofiler.version.txt || true
+
+%runscript
+    exec "$@"
+
+%test
+    coreprofiler --help

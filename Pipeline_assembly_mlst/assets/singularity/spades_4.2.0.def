@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: quay.io/biocontainers/spades:4.2.0--h8d6e82b_2
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool SPAdes genome assembler
+    Version 4.2.0
+    Build h8d6e82b_2 (biocontainers)
+    Reproducible true
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+
+%post
+    # Minimal HPC runtime utilities
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        && rm -rf /var/lib/apt/lists/*
+
+    spades.py --version > /spades.version.txt
+
+%runscript
+    exec "$@"
+
+%test
+    spades.py --version
