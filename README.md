@@ -6,9 +6,10 @@ A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-re
 
 To ensure simplicity and independence between tools and workflows, each pipeline has its own dedicated files, all of which include the same tag in their filenames for identification purposes. This is a decision made by the laboratory, and it is therefore possible that certain parts or processes may be similar across multiple pipelines.
 
-- `qiime2_amplicons` for the QIIME2 Amplicons Pipeline
-- `blast_amplicons` for the BLASTN Amplicons Pipeline
-- `elgato_sbt` for the EL GATO Nested SBT Pipeline
+- `qiime2_amplicons` for QIIME2 Amplicons Pipeline
+- `blast_amplicons` for BLASTN Amplicons Pipeline
+- `elgato_sbt` for EL GATO Nested SBT Pipeline
+- `assembly_mlst` for MLST and Assembly Pipeline
 
 */!\ The configuration files and values provided here are for information purposes only if the analyses are not run on machines belonging to HCL. The paths and certain options have been configured for those machines, and only the underlying logic and software can be applied in other environments.*
 
@@ -49,7 +50,8 @@ When launching in SLURM mode (via NGS-WEB or manual submission), the following r
 * Input data must be stored in the correct project:
 
   * `Legionella-Amplicons` for Blast or Qiime2 pipelines
-  * `Legionella-Nested-SBT` for El Gato pipelines
+  * `Legionella-Nested-SBT` for El Gato pipeline
+  * `Legionella` for MLST pipeline
 * When launched via NGS-WEB:
 
   * Only the version of the script stored in the INRIA GitLab repository is executed.
