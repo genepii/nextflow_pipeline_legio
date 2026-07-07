@@ -102,11 +102,11 @@ By default :
   * `True` : removes Illumina TruSeq Adapters (`by default`)
   * `False` : removes only bad quality reads - QPhred and minimum length
 
-> Illumina TruSeq Adapter Read 1 :
-> AGATCGGAAGAGCACACGTCTGAACTCCAGTCA 
->
-> Illumina TruSeq Adapter Read 2 :
-> AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+    > Illumina TruSeq Adapter Read 1 :
+    > AGATCGGAAGAGCACACGTCTGAACTCCAGTCA 
+    >
+    > Illumina TruSeq Adapter Read 2 :
+    > AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 
 
 #### Analysis mode

@@ -116,7 +116,7 @@ workflow {
     // ---------------------------
     // IMPORT CLASSIFIER
     // ---------------------------
-    classifier_path = file("./assets/qiime2_amplicons/${params.db}_classifier.qza")
+    classifier_path = file("./assets/${params.db}_classifier.qza")
     def use_reference = params.classifier in ['blast', 'vsearch']
 
     if (use_reference) {

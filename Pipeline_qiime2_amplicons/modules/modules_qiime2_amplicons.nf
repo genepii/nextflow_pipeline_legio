@@ -82,6 +82,7 @@ process GENERATE_CLASSIFIER_BAYES {
     """
 }
 
+
 // -----------------------------------------------------------------------------
 /*
 * Reads quality control
@@ -139,6 +140,7 @@ process QC_MULTIQC {
     """
 }
 
+
 // -----------------------------------------------------------------------------
 /*
 * Paired-end reads filtering/trimming step
@@ -178,6 +180,7 @@ process TRIM_FASTP {
         ${adapters}
     """
 }
+
 
 // -----------------------------------------------------------------------------
 /*
@@ -243,6 +246,7 @@ process GENERATE_MANIFEST_ALL {
     """
 }
 
+
 // -----------------------------------------------------------------------------
 /*
 * Import data into QIIME2 for SE or PE data (params.paired_end)
@@ -300,6 +304,7 @@ process QC_DEMUX {
         --o-visualization ${sample_id}_demux.qzv
     """
 }
+
 
 // -----------------------------------------------------------------------------
 /*
@@ -445,6 +450,7 @@ process QC_DADA2_REP {
         --o-visualization ${sample_id}_rep-seqs-dada2.qzv
     """
 }
+
 
 // -----------------------------------------------------------------------------
 /*

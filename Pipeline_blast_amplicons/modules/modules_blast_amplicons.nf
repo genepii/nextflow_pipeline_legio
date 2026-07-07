@@ -324,7 +324,11 @@ process COUNT_FASTQ_READS {
 */
 process MPA_FAMILY_BARPLOT {
     label 'python'
-    // PublishDir in config file
+
+    publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.tsv"
+    publishDir "${params.result}/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.png"
 
     input:
         tuple val(sample_id), path(mpa_modif), path(total_reads)

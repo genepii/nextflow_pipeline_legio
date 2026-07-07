@@ -305,6 +305,7 @@ echo ""
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
+rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
 echo "Deleting... ${tmp_folder}"
 rm -r "${tmp_folder}"
 
