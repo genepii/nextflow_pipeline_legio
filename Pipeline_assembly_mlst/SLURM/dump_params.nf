@@ -14,5 +14,6 @@ workflow {
     println "tmp_dir=${params.tmp_dir}"
     println "work_dir=${workflow.workDir}"
     println "result=${params.result}"
-    println "result=${params.analyse_id}"
+    println "analyse_id=${params.analyse_id}"
+    println "partition=${params.rep_partition}"
 }

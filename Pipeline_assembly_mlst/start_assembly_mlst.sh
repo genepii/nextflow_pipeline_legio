@@ -4,7 +4,7 @@
 #                                                                              #
 # start_assembly_mlst.sh version 1                                             #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-06                                        #
+# Aurelie PETICCA, last update: 2026-07                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
 # Aim: Launch for Assembly + MLST nextflow pipeline                            #
@@ -354,7 +354,6 @@ echo ""
 # echo "L'analyse ASSEMBLY + MLST du run Legionella-${sequencing_id} est en cours" \
 # | mail -s "Analyse Assembly + MLST Legionella-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-#TODO: change the command line
 if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     -- "${nf_exec}" \
     -C "${config_file}" \
@@ -398,9 +397,9 @@ echo ""
 
 timestamp=$(date +"%Y%m%d-%H%M")
 mkdir -p "${partition_folder}/OLD/${timestamp}"
-mv "${partition_folder}/*genes_*.tsv" "${partition_folder}/OLD/${timestamp}/."
+mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
 rsync -avQ \
-    "${result_folder}/dev/Rsync" "${partition_folder}/"
+    "${result_folder}"/dev/Rsync "${partition_folder}"/
 echo ""
 ### Replace old alleles.tsv and partitions.tsv by new ones
 

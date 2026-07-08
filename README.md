@@ -16,6 +16,7 @@ To ensure simplicity and independence between tools and workflows, each pipeline
 
 ```
 project/
+├── docs/               changelogs and documents
 ├── img/                images used for ReadMe
 ├── Pipeline_*/         Nextflow pipelines 
 └── nextflow_25.10.4    Nextflow executable
@@ -75,7 +76,7 @@ All input/output paths and software parameters are fully defined by the configur
 These rules apply in both execution modes:
 
 * Input files must be `fastq` or `fastq.gz`.
-* Paired-end data must contain `R1` and `R2` in filenames.
+* Data must contain `_R1` and `_R2` in filenames.
 * File naming convention:
 
   * If an underscore `_` exists in the filename, only the part before the first `_` is used for downstream naming.

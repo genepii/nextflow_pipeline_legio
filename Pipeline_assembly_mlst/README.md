@@ -47,7 +47,7 @@ Pipeline_*/
 ## Required
 
 * `-d, --seq_id` : sequencing run ID (ex: for "Legionella-20260331", run_ID = 20260331)
-* A metadata file named `Metadata_[seq_id].tsv` in `TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow` folder, in the format specified by the file `assets/MLST_Assembly_metadata.xlsx`
+* A metadata file named `Metadata_{seq_id}.tsv` in `TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow` folder, in the format specified by the file `assets/MLST_Assembly_metadata.xlsx`
 
 ## Options
 
@@ -139,8 +139,8 @@ By default :
 
 * `-r, --part` : folder for cgMLST-based HC cluster files (partitions and MLSTchewbbaca)
 
-  * Path to folder with file(s) named Lp_[nb_genes]genes_[partitions|MLSTchewbbaca].tsv, `by default : /srv/scratch/iai/bachcl/db/legio/ReporTree` 
-  * `Lp_[nb_genes]genes_MLSTchewbbaca.tsv` is used to generate the ReporTree with all included samples, while `Lp_[nb_genes]genes_partitions.tsv` provides cluster names based on a previous study.
+  * Path to folder with file(s) named Lp_{nb_genes}genes_[partitions|MLSTchewbbaca].tsv, `by default : /srv/scratch/iai/bachcl/db/legio/ReporTree` 
+  * `Lp_{nb_genes}genes_MLSTchewbbaca.tsv` is used to generate the ReporTree with all included samples, while `Lp_{nb_genes}genes_partitions.tsv` provides cluster names based on a previous study.
 
 #### Help to developpers
 

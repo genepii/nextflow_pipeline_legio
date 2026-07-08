@@ -20,14 +20,14 @@ cd ${SCRATCH}
 
 ################################################################################
 #                                                                              #
-# start_assembly_mlst.sh version 1                                             #
+# start_assembly_mlst.sbatch version 1                                         #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-06                                        #
+# Aurelie PETICCA, last update: 2026-07                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
 # Aim: SLURM launch for Assembly + MLST nextflow pipeline                      #
 #                                                                              #
-# Usage:  sbatch start_assembly_mlst.sh -s NGS-WEB_serie [options]             #
+# Usage:  sbatch start_assembly_mlst.sbatch -s NGS-WEB_serie [options]         #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
@@ -146,6 +146,7 @@ save_folder="${paths[2]}"
 # work_folder="${paths[4]}"
 result_folder="${paths[5]}"
 analyse_id="${paths[6]}"
+partition_folder="${paths[7]}"
 
 tmp_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/data
 work_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/work
@@ -254,9 +255,17 @@ mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
-    "$result_folder/" "$output_folder/"
+    "${result_folder}/" "${output_folder}/"
 echo
-### NB : synchronising every files/folders, dev and work not needed
+### Synchronising every files/folders, dev and work not needed
+
+timestamp=$(date +"%Y%m%d-%H%M")
+mkdir -p "${partition_folder}/OLD/${timestamp}"
+mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
+rsync -avQ \
+    "${result_folder}"/dev/Rsync "${partition_folder}"/
+echo ""
+### Replace old alleles.tsv and partitions.tsv by new ones
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -266,6 +275,7 @@ echo
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
 rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
+rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
 echo "Deleting... ${tmp_folder}"
 rm -r "${tmp_folder}"
 

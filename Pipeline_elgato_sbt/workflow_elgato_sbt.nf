@@ -112,6 +112,7 @@ workflow {
         error "Only paired-end (PE) data are supported. Single-end mode is not allowed."
     }
 
+
     // ---------------------------
     // raw QC PLOTS
     // ---------------------------
@@ -126,10 +127,12 @@ workflow {
 
     QC_MULTIQC_RAW(read_type_raw, raw_fastqc_zips)
 
+
     // ---------------------------
     // TRIMMING
     // ---------------------------
     samples_ch = TRIM_FASTP(inputs_ch)
+
 
     // ---------------------------
     // trim QC PLOTS
@@ -145,6 +148,7 @@ workflow {
 
     QC_MULTIQC_TRIM(read_type_trim, trimmed_fastqc_zips)
 
+
     // ---------------------------
     // DECONTAMINATION (optionnal)
     // ---------------------------
@@ -154,6 +158,7 @@ workflow {
         samples_ch = DECONTA_BBWRAP(samples_ch)
     }
 
+
     // ---------------------------
     // DOWNSAMPLING (optionnal)
     // ---------------------------
@@ -161,6 +166,7 @@ workflow {
         samples_ch = DOWNSAMPLE_BBTOOLS(samples_ch)
         QC_SEQKIT(DOWNSAMPLE_BBTOOLS.out)
     }
+
 
     // ---------------------------
     // preprocessing QC PLOTS (optionnal)
@@ -176,6 +182,7 @@ workflow {
         QC_MULTIQC_PROC(read_type_proc, proc_fastqc_zips)
     }
 
+
     // ---------------------------
     // TAXONOMIC ASSIGNATION + QC (optional)
     // ---------------------------
@@ -189,14 +196,19 @@ workflow {
         MPA_FAMILY_BARPLOT(joined_mpa_total_ch)
     }
 
+
     // ---------------------------
     // MLST PROFILE
     // ---------------------------
     MLST_ELGATO(samples_ch)
-    mlst_files_ch = MLST_ELGATO.out.mlst
-                    .map { sample_id, file -> file }
-                    .collect()
-    MERGE_ELGATO(mlst_files_ch)
+
+    mlst_elgato_ch = MLST_ELGATO.out.mlst
+        .map { sample_id, file -> file }
+        .collect()
+    fastfinder_elgato_ch = MLST_ELGATO.out.fastfinder
+        .map { sample_id, file -> file }
+        .collect()
+    MERGE_ELGATO(mlst_elgato_ch, fastfinder_elgato_ch)
 
 
     // ---------------------------

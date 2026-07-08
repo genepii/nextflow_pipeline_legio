@@ -324,7 +324,11 @@ process COUNT_FASTQ_READS {
 */
 process MPA_FAMILY_BARPLOT {
     label 'python'
-    // PublishDir in config file
+
+    publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.tsv"
+    publishDir "${params.result}/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.png"
 
     input:
         tuple val(sample_id), path(mpa_modif), path(total_reads)
@@ -356,16 +360,19 @@ process MPA_FAMILY_BARPLOT {
 */
 process MLST_ELGATO {
     label 'elgato'
-    // PublishDir in config file
+
+    publishDir "${params.result}/dev/2_ElGato", mode: 'copy',
+        pattern: "*.csv"
+    publishDir "${params.result}/2_ElGato", mode: 'copy',
+        pattern: "*_*"
 
     input:
         tuple val(sample_id), val(r1), val(r2)
 
     output:
-        tuple val(sample_id),
-            path("${sample_id}_MLST.tsv"), emit: mlst
-        tuple val(sample_id),
-            path("${sample_id}_reads")
+        tuple val(sample_id), path("${sample_id}_MLST.tsv"), emit: mlst
+        tuple val(sample_id), path("${sample_id}.csv"), emit: fastfinder
+        tuple val(sample_id), path("${sample_id}_reads")
 
     script:
     """
@@ -378,6 +385,14 @@ process MLST_ELGATO {
         --out ${sample_id}_reads \
         -w \
         > ${sample_id}_MLST.tsv
+    
+    sed "s/${sample_id}/${sample_id},${params.fastfinder_value}/g" \
+        ${sample_id}_MLST.tsv \
+        | sed 's/\\t/,/g' \
+        | sed 's/,,/,Nvx,/g' \
+        | sed 's/,0,/,FAILED,/g' \
+        | sed 's/,999,/,Nvx,/g' \
+        > ${sample_id}.csv
     """
 }
 
@@ -389,20 +404,34 @@ process MLST_ELGATO {
 */
 process MERGE_ELGATO {
     label 'elgato'
-    publishDir "${params.result}/2_ElGato", mode: 'copy'
+
+    publishDir "${params.result}", mode: 'copy',
+        pattern: "*.csv"
+    publishDir "${params.result}/2_ElGato", mode: 'copy',
+        pattern: "*.tsv"
 
     input:
         path(mlst_files)
+        path(fastfinder_files)
     
     output:
-        path("${params.suffix}_allMLST.tsv")
+        path("MLST_ElGatoResults_${params.suffix}.tsv"), emit: mlst
+        path("Fastfinder_ElGatoResults_${params.suffix}.csv"), emit: fastfinder
 
     script:
     """
-    out="${params.suffix}_allMLST.tsv"
+    printf "Sample_ID\tST\tflaA\tpilE\tasd\tmip\tmompS\tproA\tneuA\n" \
+        > "MLST_ElGatoResults_${params.suffix}.tsv"
+    cat ${mlst_files}  \
+        | sort -t\$'\\t' -k1,1 \
+        >> "MLST_ElGatoResults_${params.suffix}.tsv"
 
-    printf "Sample_ID\tST\tflaA\tpilE\tasd\tmip\tmompS\tproA\tneuA_neuAH\n" > \$out
-    cat ${mlst_files} | sort -k1,1 >> \$out
+    
+    printf "Sample ID,${params.fastfinder_desc},ST,flaA,pilE,asd,mip,mompS,proA,neuA\n" \
+        > "Fastfinder_ElGatoResults_${params.suffix}.csv"
+    cat ${fastfinder_files} \
+        | sort -t',' -k1,1 \
+        >> "Fastfinder_ElGatoResults_${params.suffix}.csv"
     """
 }
 

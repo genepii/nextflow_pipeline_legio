@@ -1,0 +1,170 @@
+# Configuration file
+
+This configuration file defines:
+
+- the execution environment (Singularity, SLURM profile, resources),
+- the computational resources allocated to each pipeline process,
+- the analysis parameters,
+- the locations of input, output and reference files.
+
+---
+
+> [!IMPORTANT]
+> All parameter values defined in this configuration file are used directly during pipeline execution when the workflow is launched through SLURM.
+>
+> The values specified in this file determine the behavior and resources allocated to the pipeline. Please check them carefully before execution.
+>
+> Parameters should only be modified by changing their values. Do not rename, remove, or modify parameter names, as they are required by the pipeline configuration.
+>
+> Before launching the pipeline, ensure that:
+> - parameter names remain unchanged;
+> - only parameter values are adapted according to the required execution settings;
+> - resource allocation and execution options are compatible with the SLURM environment.
+>
+> This configuration file is the single source of truth for all parameters used during pipeline execution.
+
+---
+
+# Execution environment
+
+## Singularity configuration
+
+| Parameter | Description |
+|-----------|-------------|
+| `enabled` | Enables execution inside Singularity containers. |
+| `autoMounts` | Automatically mounts host directories into the container. |
+| `runOptions` | Additional options passed to Singularity at runtime. |
+
+---
+
+# Execution profile
+
+The `local` profile runs the workflow directly on the local machine.
+
+| Parameter | Value | Description |
+|-----------|------:|-------------|
+| `process.executor` | `local` | Local execution. |
+| `process.cpus` | `2` | Default number of CPUs per process. |
+| `process.memory` | `200 GB` | Maximum memory available. |
+| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+
+The `slurm` profile runs the workflow on the local machine via SLURM.
+
+| Parameter | Value | Description |
+|-----------|------:|-------------|
+| `process.executor` | `slurm` | SLURM execution. |
+| `process.queue` | `diag_iai` | SLURM partition. |
+| `process.time` | `24h` | Maximum running time. |
+| `process.cpus` | `4` | Default number of CPUs per process. |
+| `process.memory` | `200 GB` | Maximum memory available. |
+| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+
+---
+
+# Process resources
+
+Each process label defines the container image and computational resources used.
+
+## FastQC
+
+| Process | Container | CPUs | Max concurrent tasks | Initial memory | Memory increase | Retry policy | Maximum retries |
+|---------|-----------|-----:|---------------------:|---------------:|-----------------|----------------|----------------:|
+| FastQC | `fastqc_v0.12.1.sif` | 1 | 10 | 5 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
+| MultiQC | `multiqc_v1.33.sif` | 1 | 1 | 15 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
+| Fastp | `fastp_v1.3.2.sif` | 2 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
+| BBTools | `bbtools_v39.81.sif` | 8 | 2 | 90 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
+| SeqKit | `seqkit_v2.13.0.sif` | 1 | 2 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
+| Kraken2 | `kraken2_v2.17.1.sif` | 8 | 2 | 90 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
+| Python | `python_plot_3.11.sif` | 4 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
+| KronaTools | `kronatools_2.8.1.sif` | 4 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
+| ElGato | `elgato_1.22.0.sif` | 4 | 2 | 50 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 3 |
+
+All processes use the following retry strategy:
+
+- Retry only when the exit status is `137` (typically memory exhaustion).
+- Memory is doubled after each retry.
+- Other failures terminate the process.
+
+---
+
+# Pipeline parameters
+
+The following parameters define the analysis to be performed.
+
+## General parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `analyse_id` | Analysis identifier automatically generated from the execution date (`YYYYMMDD`) (STR). Used to create the analysis output directory name. |
+| `suffix` | Sequencing run identifier. Used as a subdirectory name to locate input FASTQ files and organize results (STR). |
+| `input_dir_prefix` | Base directory containing sequencing run folders. The final input directory is automatically built as `${input_dir_prefix}/Legionella-Amplicons-${suffix}` (PATH). |
+| `output_dir_prefix` | Base directory where final analysis outputs are stored. The final output directory is automatically built as `${output_dir_prefix}/${suffix}/${analyse_id}_Assembly-MLST` (PATH). |
+| `save_dir_prefix` | Base directory used to store raw FASTQ files from the sequencing run. The final save directory is automatically built as `${save_dir_prefix}/${suffix}` (PATH). |
+| `tmp_dir_prefix` | Base directory used for temporary files generated during execution. The final temporary directory is automatically built as `${tmp_dir_prefix}/${suffix}` (PATH). |
+| `work_dir_prefix` | Base directory used for Nextflow work files and intermediate results. The final work directory is automatically built as `${work_dir_prefix}/${suffix}/${analyse_id}_Assembly-MLST` (PATH). |
+| `paired_end` | Enables paired-end analysis (`true`) or single-end analysis (`false`) (true/false). |
+| `adapters` | Enables adapter trimming using Fastp (true/false). |
+| `decontamination` | Enables host-read removal using BBWrap (true/false). |
+| `downsampling` | Enables read downsampling before downstream analyses (true/false). |
+| `kraken2_assign` | Enables taxonomic classification using Kraken2 (true/false). |
+
+---
+
+# Downsampling
+
+| Parameter | Description |
+|-----------|-------------|
+| `bbtools_downsampled` | Fraction of reads retained after downsampling, e.g. `0.5` keeps 50% of reads (FLOAT). |
+
+---
+
+# FASTP parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `min_quality` | Minimum Phred quality score required to retain bases (INT). |
+| `min_length` | Minimum read length after trimming (INT). |
+
+---
+
+# BBWrap decontamination
+
+| Parameter | Description |
+|-----------|-------------|
+| `bbwrap_ref` | Reference FASTA file. If empty, the indexed database specified by `bbwrap_path` is used (PATH). |
+| `bbwrap_path` | Path to the indexed BBMap reference database (PATH). |
+| `bbwrap_min_id` | Minimum alignment identity (FLOAT). |
+| `bbwrap_max_indel` | Maximum allowed indel length (INT). |
+| `bbwrap_bwr` | Bandwidth ratio used during alignment (FLOAT). |
+| `bbwrap_bw` | Alignment bandwidth (INT). |
+| `bbwrap_min_hits` | Minimum number of matching seeds required (INT). |
+| `bbwrap_qtrim` | Quality trimming mode (`r`, `l` or `rl`). |
+| `bbwrap_trimq` | Quality threshold used for trimming (INT). |
+| `bbwrap_qin` | Input FASTQ quality encoding, typically `33` (INT). |
+
+---
+
+# Kraken2
+
+| Parameter | Description |
+|-----------|-------------|
+| `kraken2_db` | Path to the Kraken2 database (PATH). |
+| `format_mpa` | Produces MetaPhlAn-compatible output format. If disabled, MPA-related processes should also be removed from the workflow (true/false). |
+
+---
+
+# ElGato
+
+| Parameter | Description |
+|-----------|-------------|
+| `elgato_depth` | Minimum sequencing depth required for allele calling (INT). |
+| `fastfinder_desc` | Metadata field names for FastFinder, comma-separated values (STR). |
+| `fastfinder_value` | Expected values associated with the selected metadata fields, comma-separated values (STR). |
+
+---
+
+# Working directory
+
+| Parameter | Description |
+|-----------|-------------|
+| `workDir` | Nextflow working directory where intermediate files are stored (PATH). |

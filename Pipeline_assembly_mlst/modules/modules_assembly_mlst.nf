@@ -1567,7 +1567,7 @@ process VISU_REPORTREE {
         \$zoom_opts \
         \$threshold_opts
 
-    mv * ${strain}_${nb}genes/.
+    mv ${strain}${nb}genes* ${strain}_${nb}genes/.
     cp ${strain}_${nb}genes/${strain}${nb}genes_partitions.tsv ${strain}_${nb}genes_partitions.tsv
     """
 }
