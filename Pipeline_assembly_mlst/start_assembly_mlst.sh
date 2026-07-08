@@ -107,7 +107,7 @@ downsampling="false"
 down_to=1
 momps="false"
 snpeff_other="false"
-zoom="analyse"
+zoom="none"
 metadata_user_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_"
 partition_folder="/srv/scratch/iai/bachcl/db/legio/ReporTree"
 analyse_id=$(date +%Y%m%d)
@@ -399,7 +399,7 @@ timestamp=$(date +"%Y%m%d-%H%M")
 mkdir -p "${partition_folder}/OLD/${timestamp}"
 mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
 rsync -avQ \
-    "${result_folder}"/dev/Rsync "${partition_folder}"/
+    "${result_folder}"/dev/Rsync/*genes_*.tsv "${partition_folder}"/
 echo ""
 ### Replace old alleles.tsv and partitions.tsv by new ones
 
@@ -411,7 +411,7 @@ echo ""
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
 rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
-rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
+#rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
 echo "Deleting... ${tmp_folder}"
 rm -r "${tmp_folder}"
 

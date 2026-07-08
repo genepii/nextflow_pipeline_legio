@@ -128,8 +128,8 @@ By default :
 * `-z, --zoom` : enable ReporTree zoom functionality
 
   * `all` : show all samples from MLSTchewbbaca.tsv `--part`
-  * `analyse` : show all samples from Metadata.tsv `--meta` (`by default`)
-  * `none` : disable zoom and shows default overview
+  * `analyse` : show all samples from Metadata.tsv `--meta`
+  * `none` : disable zoom and shows default overview (`by default`)
   * `<sample_id>` : show selected selected sample IDs (such as `SampleA` or `SampleA,SampleB`)
 
 * `-a, --meta` : TSV file containing metadata for all the samples

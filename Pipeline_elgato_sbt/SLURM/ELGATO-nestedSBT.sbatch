@@ -20,21 +20,21 @@ cd ${SCRATCH}
 
 ################################################################################
 #                                                                              #
-# start_elgato_sbt.sbatch version 1                                            #
+# ELGATO-nestedSBT.sbatch version 1                                            #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-06                                        #
+# Aurelie PETICCA, last update: 2026-07                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
 # Aim: SLURM launch for El Gato Nested SBT nextflow pipeline                   #
 #                                                                              #
-# Usage:  sbatch start_elgato_sbt.sbatch -s NGS-WEB_serie [options]            #
+# Usage:  sbatch ELGATO-nestedSBT.sbatch -s NGS-WEB_serie [options]            #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch start_elgato_sbt.sbatch -s NGS-WEB_serie [options]" >&2
+    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -s NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
     echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
@@ -46,7 +46,7 @@ display_help() {
 }
 
 usage() {
-    echo "Usage: sbatch start_elgato_sbt.sbatch -s <YYYYMMDD> [options]" >&2
+    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -s <YYYYMMDD> [options]" >&2
     echo >&2
     echo "Options:" >&2
     echo "  -s             NGS-WEB series (required)" >&2

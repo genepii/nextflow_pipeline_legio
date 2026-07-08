@@ -1385,6 +1385,7 @@ process MERGE_REPORTREE_TSV {
             path("${strain}_${nb}genes_MLST.merged.tsv"),
             emit: mlst
         path("${strain}_${nb}genes_MLST.warning.tsv")
+        path("${strain}_${nb}genes_MLSTchewbbaca.tsv")
 
     script:
     """
@@ -1489,7 +1490,6 @@ process LP_MERGE_METADATA {
 * Output  : ReporTree outputs
 * Purpose : MLST newick tree and strain clustering
 */
-//TODO: modifier ligne commande avec Christophe
 process VISU_REPORTREE {
     label 'reportree'
 

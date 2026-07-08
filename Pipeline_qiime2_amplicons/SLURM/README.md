@@ -5,13 +5,13 @@
 */!\ The configuration files and values provided here are for information purposes only if the analyses are not run on machines belonging to HCL. The paths and certain options have been configured for those machines, and only the underlying logic and software can be applied in other environments.*
 
 **To run the pipeline via NGS-WEB, the nextflow_pipeline_legio repository must be located in the `/srv/scratch/DEPOT/pipelines` directory**
-**and start_\*.sbatch must be placed in the NGS-WEB repository.**
+**and {script}.sbatch must be placed in the NGS-WEB repository.**
 
 ```
 SLURM/
 ├── config/             config files for Nextflow pipeline
 ├── dump_params.nf      Nextflow workflow for retrieving write folders from the config file
-└── start_*             sbatch script for launching Nextflow pipelines in SLURM mode
+└── {script}.sbatch     sbatch script for launching Nextflow pipelines in SLURM mode
 ```
 
 ---
@@ -24,7 +24,7 @@ It supports single-end and paired-end data, optional adapters trimming, and two 
 #### Run
 
 ```bash
-sbatch start_qiime2_amplicons.sbatch -s <NGS-WEB_id> [options]
+sbatch QIIME2-amplicons.sbatch -s <NGS-WEB_id> [options]
 ```
 ---
 

@@ -3,10 +3,10 @@
 #SBATCH --mem=5G
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=submitter:1
-#SBATCH --output=/srv/net/cluqumngs/TMP_IAI/redmine/65198/Blast-amplicons_%j.out
-#SBATCH --error=/srv/net/cluqumngs/TMP_IAI/redmine/65198/Blast-amplicons_%j.err
-#SBATCH --comment="Blastn Amplicons pipeline, SLURM out in redmine/65198"
-#SBATCH --job-name=Blast-amplicons
+#SBATCH --output=/srv/net/cluqumngs/TMP_IAI/redmine/65198/Assembly-MLST_%j.out
+#SBATCH --error=/srv/net/cluqumngs/TMP_IAI/redmine/65198/Assembly-MLST_%j.err
+#SBATCH --comment="Assembly MLST pipeline, SLURM out in redmine/65198"
+#SBATCH --job-name=Assembly-MLST
 #SBATCH --partition=diag_iai
 #SBATCH --nodelist=di6182su
 #SBATCH --account=iai
@@ -20,33 +20,33 @@ cd ${SCRATCH}
 
 ################################################################################
 #                                                                              #
-# start_blast_amplicons.sbatch version 1                                       #
+# MLST-assembly.sbatch version 1                                               #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-06                                        #
+# Aurelie PETICCA, last update: 2026-07                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
-# Aim: SLURM launch for Blastn Amplicons nextflow pipeline                     #
+# Aim: SLURM launch for Assembly + MLST nextflow pipeline                      #
 #                                                                              #
-# Usage:  sbatch start_blast_amplicons.sbatch -s NGS-WEB_serie [options]       #
+# Usage:  sbatch MLST-assembly.sbatch -s NGS-WEB_serie [options]               #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch start_blast_amplicons.sbatch -s NGS-WEB_serie [options]" >&2
+    echo "Usage: sbatch MLST-assembly.sh -s NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
     echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
     echo "   -c             [path]          nextflow config file to use, by default : 
-                                                <nextflow_folder>/config/blast_amplicons.config" >&2
+                                                <nextflow_folder>/config/assembly_mlst.config" >&2
     echo >&2
     echo "   -h                             print this help message and exit" >&2
     echo >&2
 }
 
 usage() {
-    echo "Usage: sbatch start_blast_amplicons.sbatch -s <YYYYMMDD> [options]" >&2
+    echo "Usage: sbatch MLST-assembly.sh -s <YYYYMMDD> [options]" >&2
     echo >&2
     echo "Options:" >&2
     echo "  -s             NGS-WEB series (required)" >&2
@@ -64,10 +64,10 @@ pipeline_nf=""
 nf_exec=""
 
 ## Nextflow default values
-script_dir="${DEPOT}/pipelines/nextflow_pipeline_legio/Pipeline_blast_amplicons/SLURM"
+script_dir="${DEPOT}/pipelines/nextflow_pipeline_legio/Pipeline_assembly_mlst/SLURM"
 
-config_file="${script_dir}/config/blast_amplicons.config"
-pipeline_nf="${script_dir}/../workflow_blast_amplicons.nf"
+config_file="${script_dir}/config/assembly_mlst.config"
+pipeline_nf="${script_dir}/../workflow_assembly_mlst.nf"
 dump_nf="${script_dir}/dump_params.nf"
 nf_exec="${script_dir}/../../nextflow_25.10.4"
 
@@ -146,9 +146,10 @@ save_folder="${paths[2]}"
 # work_folder="${paths[4]}"
 result_folder="${paths[5]}"
 analyse_id="${paths[6]}"
+partition_folder="${paths[7]}"
 
-tmp_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Blast-amplicons/data
-work_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Blast-amplicons/work
+tmp_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/data
+work_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/work
 
 ### If path empty error
 for d in "${input_folder}" "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
@@ -222,14 +223,14 @@ echo "--- FINISHED - to SAVE FOLDER --------------------------------------------
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
-## Start Blast analysis
-echo "--- BLAST AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
+## Start Assembly + MLST analysis
+echo "--- ASSEMBLY + MLST ANALYSIS STARTING ------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ### Notification
-# echo "L'analyse BLAST AMPLICONS du run Legionella-Amplicons-${ngsweb_id} est en cours" \
-# | mail -s "Analyse BLAST Legionella-Amplicons-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse ASSEMBLY + MLST du run Legionella-${ngsweb_id} est en cours" \
+# | mail -s "Analyse ASSEMBLY + MLST Legionella-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
 "${nf_exec}" run \
     "${pipeline_nf}" \
@@ -254,9 +255,17 @@ mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
-    "$result_folder/" "$output_folder/"
+    "${result_folder}/" "${output_folder}/"
 echo
-### NB : synchronising every files/folders, dev and work not needed
+### Synchronising every files/folders, dev and work not needed
+
+timestamp=$(date +"%Y%m%d-%H%M")
+mkdir -p "${partition_folder}/OLD/${timestamp}"
+mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
+rsync -avQ \
+    "${result_folder}"/dev/Rsync/*genes_*.tsv "${partition_folder}"/
+echo ""
+### Replace old alleles.tsv and partitions.tsv by new ones
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -265,6 +274,8 @@ echo
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
+rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
+rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
 echo "Deleting... ${tmp_folder}"
 rm -r "${tmp_folder}"
 
@@ -273,7 +284,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ### Notification
-# echo "L'analyse BLAST AMPLICONS du run Legionella-Amplicons-${ngsweb_id} est disponible ici : ${output_folder}" \
-# | mail -s "Analyse BLAST Legionella-Amplicons-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
+# echo "L'analyse ASSEMBLY + MLST du run Legionella-${ngsweb_id} est disponible ici : ${output_folder}" \
+# | mail -s "Analyse ASSEMBLY + MLST Legionella-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
 echo "END -------------------------------------------------------------------------------------------------------------------"
