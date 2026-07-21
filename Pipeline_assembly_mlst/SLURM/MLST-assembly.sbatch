@@ -74,11 +74,6 @@ nf_exec="${script_dir}/../../nextflow_25.10.4"
 ### Dynamic Nextflow configuration
 nextflow-conf > "${SCRATCH}/SLURM.conf"
 
-### Launch-specific configuration  
-clusterOptions="--account=\"${SLURM_JOB_ACCOUNT}\" \
---partition=\"${SLURM_JOB_PARTITION}\" \
---nodelist=\"${SLURM_JOB_NODELIST}\""
-
 ## User values
 ### Check args presence
 if [ $# -eq 0 ]; then
@@ -136,7 +131,7 @@ mapfile -t paths < <(
     "${nf_exec}" run "${dump_nf}" \
         -c "${config_file}" \
         --suffix "${ngsweb_id}" \
-        --clusterOptions "${clusterOptions}" \
+        -profile local \
         2>&1 | grep -E '^.*=' | cut -d= -f2-
 )
 input_folder="${paths[0]}"
@@ -147,6 +142,7 @@ save_folder="${paths[2]}"
 result_folder="${paths[5]}"
 analyse_id="${paths[6]}"
 partition_folder="${paths[7]}"
+metadata_user="${paths[8]}"
 
 tmp_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/data
 work_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/work
@@ -178,13 +174,38 @@ if [[ ! -d "${input_folder}" ]]; then
     exit 1
 fi
 
-### Check input_folder contains FASTQ files
-shopt -s nullglob
-fastq_files=( "${input_folder}"/*.fastq "${input_folder}"/*.fastq.gz )
-if [[ ${#fastq_files[@]} -eq 0 ]]; then
-    echo "ERROR: No FASTQ or FASTQ.GZ files found in input_folder/input_dir: ${input_folder}" >&2
+## Check Metadata file
+if [[ ! -f "${metadata_user}" ]]; then
+    echo "ERROR: file not found ${metadata_user}" >&2
     exit 1
 fi
+
+### Check if TSV
+header=$(head -n1 "${metadata_user}")
+[[ "${header}" == *$'\t'* ]] || {
+    echo "ERROR: ${metadata_user} is not a TSV file." >&2
+    exit 1
+}
+
+### Check columns needed
+for col in ID Year Origin Linked_to; do
+    grep -qw "${col}" <<< "$(tr '\t' '\n' <<< "${header}")" || {
+        echo "ERROR: Missing column '${col}' in ${metadata_user}" >&2
+        exit 1
+    }
+done
+
+### Check FASTQs against metadata
+valid_ids=$(tail -n +2 "${metadata_user}" | cut -f1 | tr '\n' '|' | sed 's/|$//')
+find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.fastq.gz" \) | while read -r f; do
+    base=$(basename "${f}")
+    sample=${base%%_*}
+
+    echo "${valid_ids}" | grep -qw "${sample}" || {
+        echo "ERROR: FASTQ sample '${sample}' not found in Metadata file" >&2
+        exit 1
+    }
+done
 
 
 ################################################################################
@@ -238,7 +259,6 @@ echo
     -c "${config_file}" \
     --suffix "${ngsweb_id}" \
     -profile slurm \
-    --clusterOptions "${clusterOptions}" \
     -with-trace "${SCRATCH}/nextflow_${ngsweb_id}.txt" \
     -with-report "${SCRATCH}/nextflow_${ngsweb_id}.html"
 

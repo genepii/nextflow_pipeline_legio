@@ -74,11 +74,6 @@ nf_exec="${script_dir}/../../nextflow_25.10.4"
 ### Dynamic Nextflow configuration
 nextflow-conf > "${SCRATCH}/SLURM.conf"
 
-### Launch-specific configuration  
-clusterOptions="--account=\"${SLURM_JOB_ACCOUNT}\" \
---partition=\"${SLURM_JOB_PARTITION}\" \
---nodelist=\"${SLURM_JOB_NODELIST}\""
-
 ## User values
 ### Check args presence
 if [ $# -eq 0 ]; then
@@ -136,7 +131,7 @@ mapfile -t paths < <(
     "${nf_exec}" run "${dump_nf}" \
         -c "${config_file}" \
         --suffix "${ngsweb_id}" \
-        --clusterOptions "${clusterOptions}" \
+        -profile local \
         2>&1 | grep -E '^.*=' | cut -d= -f2-
 )
 input_folder="${paths[0]}"
@@ -237,7 +232,6 @@ echo
     -c "${config_file}" \
     --suffix "${ngsweb_id}" \
     -profile slurm \
-    --clusterOptions "${clusterOptions}" \
     -with-trace "${SCRATCH}/nextflow_${ngsweb_id}.txt" \
     -with-report "${SCRATCH}/nextflow_${ngsweb_id}.html"
 
