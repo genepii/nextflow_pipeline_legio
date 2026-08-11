@@ -2,3 +2,4 @@
 work/
 results/
 test/
+Pipeline_assembly_mlst/assets/*.tsv.gz

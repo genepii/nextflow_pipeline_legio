@@ -75,12 +75,9 @@ All input/output paths and software parameters are fully defined by the configur
 
 These rules apply in both execution modes:
 
-* Input files must be `fastq` or `fastq.gz`.
-* Data must contain `_R1` and `_R2` in filenames.
-* File naming convention:
-
-  * If an underscore `_` exists in the filename, only the part before the first `_` is used for downstream naming.
-  * Otherwise, the full filename is used.
+* **Input files must be `fastq` or `fastq.gz`**.
+* **Data must contain `_R1` and `_R2` in filenames**.
+* Only the part before the first `_` is used for downstream naming (= sample_id).
 
 ---
 
