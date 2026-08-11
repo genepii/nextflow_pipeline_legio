@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 25 ]; then
-    echo "ERROR: 25 arguments expected, got $#"
+if [ "$#" -ne 26 ]; then
+    echo "ERROR: 26 arguments expected, got $#"
     exit 1
 fi
 
@@ -39,6 +39,8 @@ vsearch_identity="${22}"
 vsearch_maxaccepts="${23}"
 vsearch_query_cov="${24}"
 classifier="${25}"
+
+kraken_db="${26}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -85,6 +87,10 @@ echo ""
 echo "FASTP FILTERING - trimming"
 echo "Phred Score Qual. : ${min_quality}"
 echo "Length min        : ${min_length}"
+echo ""
+
+echo "KRAKEN - identification"
+echo "Database          : ${kraken_db}"
 echo ""
 
 echo "DADA2 DENOISING"

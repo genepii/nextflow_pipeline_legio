@@ -96,11 +96,17 @@ process QC_FASTQC {
 
     input:
         val(read_type)
-        tuple val(sample_id), val(r1), val(r2)
+        tuple val(sample_id), 
+            val(r1), 
+            val(r2)
 
     output:
-        tuple val(sample_id), path("*.zip"), emit: zip_files
-        tuple val(sample_id), path("*.html"), emit: html_files
+        tuple val(sample_id), 
+            path("*.zip"), 
+            emit: zip_files
+        tuple val(sample_id), 
+            path("*.html"), 
+            emit: html_files
 
     script:
     def inputs = params.paired_end ?
@@ -123,19 +129,19 @@ process QC_FASTQC {
 */
 process QC_MULTIQC {
     label 'multiqc'
-    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
+    publishDir "${params.result}/0_FastQC", mode: 'copy'
 
     input:
         val(read_type)
         path(fastqc_zip)
 
     output:
-        path("General_multiQC_report.html")
+        path("${read_type}_multiQC_report.html")
 
     script:
     """
     multiqc ${fastqc_zip} \
-        --filename "General_multiQC_report.html" \
+        --filename "${read_type}_multiQC_report.html" \
         --force
     """
 }
@@ -153,7 +159,9 @@ process TRIM_FASTP {
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
-        tuple val(sample_id), val(r1), val(r2)
+        tuple val(sample_id), 
+            val(r1), 
+            val(r2)
 
     output:
         tuple val(sample_id),
@@ -184,6 +192,165 @@ process TRIM_FASTP {
 
 // -----------------------------------------------------------------------------
 /*
+* Taxonomic classification using Kraken2
+* Input   : paired-end FASTQ files (R1, R2)
+* Output  : Kraken2 standard report file or MPA-style taxonomic profile
+* Purpose : rapid k-mer based taxonomic assignment for quality control
+*/
+process ASSIGN_KRAKEN2 {
+    label 'kraken2'
+    publishDir "${params.result}/1_Kraken2", mode: 'copy'
+
+    input:
+        tuple val(sample_id), 
+            path(r1), 
+            path(r2)
+
+    output:
+        tuple val(sample_id), 
+            path("${sample_id}.${params.format_mpa ? 'mpa' : 'report'}")
+
+    script:
+    def output_format = params.format_mpa ? 
+        "--use-mpa-style --report ${sample_id}.mpa" : 
+        "--report ${sample_id}.report"
+
+    """
+    kraken2 \
+        --db "${params.kraken2_db}" \
+        --paired \
+        --classified-out "${sample_id}#.fastq" \
+        --output "${sample_id}.out" \
+        ${output_format} \
+        "${r1}" "${r2}" \
+        --threads ${task.cpus}
+    """
+}
+
+/*
+* Format Kraken2 output for visualisation
+* Input   : MPA-style taxonomic profile
+* Output  : results formatted (.tsv), with no double count
+* Purpose : explore full taxonomic composition from flattened taxonomy
+*/
+process MPA_MODIF {
+    label 'python'
+    publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
+
+    input:
+        tuple val(sample_id), 
+            path(mpa)
+
+    output:
+        tuple val(sample_id), 
+            path("${sample_id}_mpaModif.tsv")
+    
+    script:
+    """
+    qiime2_amplicons_mpa_modified.py ${mpa} ${sample_id}_mpaModif.tsv
+    """
+}
+
+/*
+* Krona visualisation from Kraken2 MPA-style report formatted
+* Input   : Kraken2 results formatted (.tsv)
+* Output  : interactive Krona HTML visualisation
+* Purpose : explore full taxonomic composition from flattened taxonomy
+*/
+process MPA_TO_KRONA {
+    label 'krona'
+    publishDir "${params.result}/1_Kraken2", mode: 'copy'
+
+    input:
+        tuple val(sample_id), 
+            path(krona_input)
+
+    output:
+        tuple val(sample_id), 
+            path("${sample_id}_allKrona.html")
+
+    script:
+    """
+    ktImportText ${krona_input} -o ${sample_id}_allKrona.html
+    """
+}
+
+/*
+* Total reads count recovery from FASTQ
+* Input   : FASTQ files (R1, R2)
+* Output  : total number of reads 
+* Purpose : keep the information for plotting later
+*/
+process COUNT_FASTQ_READS {
+    label 'seqkit'
+    publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
+
+    input:
+        tuple val(sample_id), 
+            path(r1), 
+            path(r2)
+
+    output:
+        tuple val(sample_id), 
+            path("${sample_id}_totalreads.txt"), 
+            emit: kraken
+        tuple val(sample_id), 
+            path("${sample_id}_totalreads.txt"), 
+            path(r1), 
+            path(r2),
+            emit: qiime
+
+    script:
+    """
+    seqkit stats -T ${r1} > stats.tsv
+
+    awk -F '\\t' 'NR==2 {gsub(/,/, "", \$4); print \$4}' stats.tsv \
+        > ${sample_id}_totalreads.txt
+
+    awk -F '\\t' 'NR==2 {gsub(/,/, "", \$5); print \$5}' stats.tsv \
+    > ${sample_id}_totalbases.txt
+    """
+}
+
+/*
+* Family-level abundance barplot from Kraken2 MPA report
+* Input   : MPA-style taxonomic profile
+* Output  : TSV table + barplot (top 15 families)
+* Purpose : clean visualisation of dominant bacterial families
+*/
+process MPA_FAMILY_BARPLOT {
+    label 'python'
+
+    publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.tsv"
+    publishDir "${params.result}/1_Kraken2", mode: 'copy',
+        pattern: "*_familyBarplot.png"
+
+    input:
+        tuple val(sample_id), 
+            path(mpa_modif), 
+            path(total_reads)
+
+    output:
+        tuple val(sample_id),
+            path("${sample_id}_familyBarplot.tsv"),
+            path("${sample_id}_familyBarplot.png")
+
+    script:
+    """
+    total=\$(cat ${total_reads} | head -n 1)
+
+    qiime2_amplicons_mpa_family_barplot.py \
+        ${mpa_modif} \
+        \$total \
+        ${sample_id}_familyBarplot.tsv \
+        ${sample_id}_familyBarplot.png
+    """
+}
+
+
+// -----------------------------------------------------------------------------
+/*
 * Generate TSV manifest based on params.paired_end = True or not
 * Input   : tuples with sample_id, Illumina R1 and R2 (optionnal)
 * Output  : TSV manifest for this sample_id
@@ -192,13 +359,18 @@ process TRIM_FASTP {
 */
 process GENERATE_MANIFEST {
     label 'qiime'
-    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
+    publishDir "${params.result}/dev/2_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), val(r1), val(r2), val(reads_learn)
+        tuple val(sample_id), 
+            val(r1), 
+            val(r2), 
+            val(reads_learn)
 
     output:
-        tuple val(sample_id), path("${sample_id}_manifest.tsv"), val(reads_learn)
+        tuple val(sample_id), 
+            path("${sample_id}_manifest.tsv"), 
+            val(reads_learn)
 
     script:
     """
@@ -221,7 +393,7 @@ process GENERATE_MANIFEST {
 */
 process GENERATE_MANIFEST_ALL {
     label 'qiime'
-    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
+    publishDir "${params.result}/dev/2_Qiime2", mode: 'copy'
 
     input:
         path(manifests)
@@ -256,13 +428,17 @@ process GENERATE_MANIFEST_ALL {
 */
 process IMPORT_MANIFEST {
     label 'qiime'
-    publishDir "${params.result}/dev/1_Qiime2", mode: 'copy'
+    publishDir "${params.result}/dev/2_Qiime2", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(manifest), val(reads_learn)
+        tuple val(sample_id), 
+            path(manifest), 
+            val(reads_learn)
 
     output:
-        tuple val(sample_id), path("${sample_id}_demux.qza"), val(reads_learn)
+        tuple val(sample_id), 
+            path("${sample_id}_demux.qza"), 
+            val(reads_learn)
 
     script:
     def type = params.paired_end ? 
@@ -289,44 +465,22 @@ process IMPORT_MANIFEST {
 */
 process QC_DEMUX {
     label 'qiime'
-    publishDir "${params.result}/1_Qiime2", mode: 'copy'
+    publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(demux), val(reads_learn)
+        tuple val(sample_id), 
+            path(demux), 
+            val(reads_learn)
 
     output:
-        tuple val(sample_id), path("${sample_id}_demux.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_demux.qzv")
 
     script:
     """
     qiime demux summarize \
         --i-data ${demux} \
         --o-visualization ${sample_id}_demux.qzv
-    """
-}
-
-
-// -----------------------------------------------------------------------------
-/*
-* Total sequences count recovery from trimmed FASTQ
-* Input   : trimmed R1 FASTQ
-* Output  : number of reads
-* Purpose : stop the analysis for sample with not enough reads inside
-*/
-process COUNT_READS {
-    label 'qiime'
-
-    input:
-        tuple val(sample_id), path(r1), path(r2)
-
-    output:
-        tuple val(sample_id), path("${sample_id}_totalseq.txt"), path(r1), path(r2)
-
-    script:
-    """
-    nb_reads=\$(zcat ${r1} | wc -l)
-    nb_reads=\$((nb_reads / 4))
-    echo \$nb_reads > "${sample_id}_totalseq.txt"
     """
 }
 
@@ -340,11 +494,13 @@ process COUNT_READS {
 */
 process DENOISE_DADA2 {
     label 'qiime'
-    publishDir "${params.result}/dev/2_Dada2", mode: 'copy'
+    publishDir "${params.result}/dev/3_Dada2", mode: 'copy'
     errorStrategy 'ignore'
 
     input:
-        tuple val(sample_id), path(demux), val(reads_learn)
+        tuple val(sample_id), 
+            path(demux), 
+            val(reads_learn)
 
     output:
         tuple val(sample_id), 
@@ -387,13 +543,15 @@ process DENOISE_DADA2 {
 */
 process QC_DADA2_META {
     label 'qiime'
-    publishDir "${params.result}/2_Dada2", mode: 'copy'
+    publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(stats_dada2)
+        tuple val(sample_id), 
+            path(stats_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_stats-dada2.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_stats-dada2.qzv")
 
     script:
     """
@@ -411,13 +569,15 @@ process QC_DADA2_META {
 */
 process QC_DADA2_TABLE {
     label 'qiime'
-    publishDir "${params.result}/2_Dada2", mode: 'copy'
+    publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(table_dada2)
+        tuple val(sample_id), 
+            path(table_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_table-dada2.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_table-dada2.qzv")
 
     script:
     """
@@ -435,13 +595,15 @@ process QC_DADA2_TABLE {
 */
 process QC_DADA2_REP {
     label 'qiime'
-    publishDir "${params.result}/2_Dada2", mode: 'copy'
+    publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(rep_dada2)
+        tuple val(sample_id), 
+            path(rep_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_rep-seqs-dada2.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_rep-seqs-dada2.qzv")
 
     script:
     """
@@ -461,11 +623,12 @@ process QC_DADA2_REP {
 */
 process SKLEARN_CLASSIFIER {
     label 'qiime'
-    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+    publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
         path(classifier)
-        tuple val(sample_id), path(rep_dada2)
+        tuple val(sample_id), 
+            path(rep_dada2)
 
     output:
         tuple val(sample_id), 
@@ -513,12 +676,13 @@ process SKLEARN_CLASSIFIER {
 */
 process BLAST_CLASSIFIER {
     label 'qiime'
-    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+    publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
         path(reads)
         path(taxa)
-        tuple val(sample_id), path(rep_dada2)
+        tuple val(sample_id), 
+            path(rep_dada2)
 
     output:
         tuple val(sample_id), 
@@ -573,12 +737,13 @@ process BLAST_CLASSIFIER {
 */
 process VSEARCH_CLASSIFIER {
     label 'qiime'
-    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+    publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
         path(reads)
         path(taxa)
-        tuple val(sample_id), path(rep_dada2)
+        tuple val(sample_id), 
+            path(rep_dada2)
 
     output:
         tuple val(sample_id),
@@ -633,10 +798,12 @@ process VSEARCH_CLASSIFIER {
 */
 process TAXA_FILTERING {
     label 'qiime'
-    publishDir "${params.result}/dev/3_Classification", mode: 'copy'
+    publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(taxa_classified), path(table_dada2)
+        tuple val(sample_id), 
+            path(taxa_classified), 
+            path(table_dada2)
 
     output:
         tuple val(sample_id),
@@ -674,14 +841,21 @@ process TAXA_FILTERING {
 */
 process QC_CLASSIFICATION {
     label 'qiime'
-    publishDir "${params.result}/3_Classification", mode: 'copy'
+    
+    publishDir "${params.result}/2_Classification", mode: 'copy',
+        pattern: "*filtBarplot.qzv"
+    publishDir "${params.result}/2_Classification/init", mode: 'copy',
+        pattern: "*initBarplot.qzv"
 
     input:
         val(results_type)
-        tuple val(sample_id), path(taxa_classified), path(table_dada2)
+        tuple val(sample_id), 
+            path(taxa_classified), 
+            path(table_dada2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_${results_type}Barplot.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_${results_type}Barplot.qzv")
 
     script:
     """
@@ -703,10 +877,12 @@ process KRONA_TAXA_LEVEL{
     label 'qiime'
 
     input:
-        tuple val(sample_id), path(taxa_classified)
+        tuple val(sample_id), 
+            path(taxa_classified)
 
     output:
-        tuple val(sample_id), path("${sample_id}_maxLevel.txt")
+        tuple val(sample_id), 
+            path("${sample_id}_maxLevel.txt")
 
     script:
     """
@@ -748,14 +924,22 @@ process KRONA_TAXA_LEVEL{
 */
 process KRONA_CLASSIFICATION {
     label 'qiime'
-    publishDir "${params.result}/3_Classification", mode: 'copy'
+    
+    publishDir "${params.result}/2_Classification", mode: 'copy',
+        pattern: "*filtKrona.qzv"
+    publishDir "${params.result}/2_Classification/init", mode: 'copy',
+        pattern: "*initKrona.qzv"
 
     input:
         val(results_type)
-        tuple val(sample_id), path(taxa_classified), path(table_dada2), path(maxlevel)
+        tuple val(sample_id), 
+            path(taxa_classified), 
+            path(table_dada2), 
+            path(maxlevel)
 
     output:
-        tuple val(sample_id), path("${sample_id}_${results_type}Krona.qzv")
+        tuple val(sample_id), 
+            path("${sample_id}_${results_type}Krona.qzv")
 
     script:
     """
@@ -777,21 +961,26 @@ process KRONA_CLASSIFICATION {
 */
 process KRONA_TO_HTML {
     label 'qiime'
-    publishDir "${params.result}/3_Classification", mode: 'copy'
+    
+    publishDir "${params.result}/2_Classification", mode: 'copy',
+        pattern: "*filtKrona*"
+    publishDir "${params.result}/2_Classification/init", mode: 'copy',
+        pattern: "*initKrona*"
 
     input:
         val(results_type)
-        tuple val(sample_id), path(krona_qzv)
+        tuple val(sample_id), 
+            path(krona_qzv)
 
     output:
         tuple val(sample_id),
-            path("${sample_id}/${results_type}Krona/*")
+            path("${sample_id}_${results_type}KronaHTML")
 
     script:
     """
     qiime tools export \
         --input-path ${krona_qzv} \
-        --output-path "${sample_id}/${results_type}Krona"
+        --output-path "${sample_id}_${results_type}KronaHTML"
     """
 }
 
@@ -837,6 +1026,8 @@ process CREATE_INFO {
         val(vsearch_maxaccepts)
         val(vsearch_query_cov)
         val(classifier)
+        
+        val(kraken_db)
 
     output:
         path("pipeline_${suffix}.txt")
@@ -868,7 +1059,8 @@ process CREATE_INFO {
         "${vsearch_identity}" \
         "${vsearch_maxaccepts}" \
         "${vsearch_query_cov}" \
-        "${classifier}"
+        "${classifier}" \
+        "${kraken_db}"
     """
 }
 
@@ -911,6 +1103,95 @@ process MULTIQC_INFO {
 
     echo "MULTIQC VERSION" >> \$software_track_file
     multiqc --version >> \$software_track_file || true
+    """
+}
+
+process SEQKIT_INFO {
+    label 'seqkit'
+
+    input:
+        path(file) 
+
+    output: 
+        path("seqkit_${params.suffix}.txt")
+
+    script:
+    """
+    software_track_file="seqkit_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "SEQKIT VERSION" >> \$software_track_file
+    seqkit version >> \$software_track_file || true
+    """
+}
+
+process KRAKEN2_INFO {
+    label 'kraken2'
+
+    input:
+        path(file) 
+
+    output: 
+        path("kraken2_${params.suffix}.txt")
+
+    script:
+    """
+    software_track_file="kraken2_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "KRAKEN2 VERSION" >> \$software_track_file
+    kraken2 --version >> \$software_track_file || true
+    """
+}
+
+process PYTHON_INFO {
+    label 'python'
+
+    input:
+        path(file) 
+
+    output: 
+        path("python_${params.suffix}.txt")
+
+    script:
+    """
+    software_track_file="python_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "PYTHON PACKAGES VERSION" >> \$software_track_file
+    python3 --version >> \$software_track_file || true
+    python3 -c "import numpy, pandas, matplotlib; \
+        print('numpy=='+numpy.__version__); \
+        print('pandas=='+pandas.__version__); \
+        print('matplotlib=='+matplotlib.__version__)" \
+        >> \$software_track_file || true
+    """
+}
+
+process KRONA_INFO {
+    label 'krona'
+
+    input:
+        path(file) 
+
+    output: 
+        path("krona_${params.suffix}.txt")
+
+    script:
+    """
+    software_track_file="krona_${params.suffix}.txt"
+    cat $file > \$software_track_file
+
+    echo "" >> \$software_track_file
+
+    echo "KRONA VERSION" >> \$software_track_file
+    ktImportText 2>&1 | grep -oE 'KronaTools [0-9.]+' | awk '{print \$2}' >> \$software_track_file
     """
 }
 

@@ -16,38 +16,26 @@ nextflow.enable.dsl=2
 // collect fastq files in tuple [sample_id, R1, R2] or [sample_id, R1]
 if (params.paired_end) {
     inputs_ch = Channel
-        .fromFilePairs("${params.input_dir}/*_{R1,R2}.fastq*")
+        .fromFilePairs("${params.input_dir}/*_{R1,R2}{.fastq*,_*.fastq*}")
         .map { id, reads ->
 
-            def base = id
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
-
-            def r1 = reads[0]
-            def r2 = reads[1]
+            // Sample ID = everything before the first '_'
+            def sample_id = reads[0].baseName.split('_')[0]
 
             assert sample_id
-            assert r1
-            assert r2
+            assert reads.size() == 2
 
-            tuple(sample_id, r1, r2)
+            tuple(sample_id, reads[0], reads[1])
         }
-
 } else {
     inputs_ch = Channel
-        .fromPath("${params.input_dir}/*_R1.fastq*")
+        .fromPath("${params.input_dir}/*_R1{.fastq*,_*.fastq*}")
         .map { r1 ->
 
-            def base = r1.baseName
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
+            // Sample ID = everything before the first '_'
+            def sample_id = r1.baseName.split('_')[0]
 
             assert sample_id
-            assert r1
 
             tuple(sample_id, r1, null)
         }
@@ -612,13 +600,11 @@ workflow {
         tuple(strain, nb, file, cfg.grapetree, cfg.reportree)
     }
 
+    // ---------------------------
+    // GrapeTree
+    // ---------------------------
     grapetree_ch = annotated_ch
         .filter { s, nb, f, g, r -> g }
-        .map { s, nb, f, g, r ->
-            tuple(s, nb, f)
-        }
-    reportree_ch = annotated_ch
-        .filter { s, nb, f, g, r -> r }
         .map { s, nb, f, g, r ->
             tuple(s, nb, f)
         }
@@ -635,7 +621,16 @@ workflow {
         }
     CHEWBBACA_GRAPETREE(filtered_grapetree_ch)
 
-    // ReporTree not on .filt.tsv
+    // ---------------------------
+    // ReporTree
+    // ---------------------------
+    reportree_ch = annotated_ch
+        .filter { s, nb, f, g, r -> r }
+        .map { s, nb, f, g, r ->
+            tuple(s, nb, f)
+        }
+
+    // ReporTree only on valid input files (no .filt.tsv)
     filtered_chewbbaca_ch = reportree_ch
         .filter { s, nb, f ->
             def lines = f.text.readLines().findAll { it.trim() }
@@ -645,16 +640,16 @@ workflow {
             !f.name.endsWith(".filt.tsv") &&
             n_cols >= 2
         }
-    MERGE_REPORTREE_TSV(filtered_chewbbaca_ch)
+    CHEWBBACA_REPORTREE(filtered_chewbbaca_ch)
 
     // ReporTree only if > 2 samples
-    filtered_mergedchewbbaca_ch = MERGE_REPORTREE_TSV.out.mlst
+    filtered_mergedchewbbaca_ch = CHEWBBACA_REPORTREE.out.mlst
         .filter { s, nb, f ->
             def lines = f.text.readLines().findAll { it.trim() }
             def n_lines = lines.size()
             n_lines > 3
         }
-    CHEWBBACA_REPORTREE(filtered_mergedchewbbaca_ch)
+    MERGE_REPORTREE_TSV(filtered_mergedchewbbaca_ch)
 
     LP_MERGE_METADATA(LP_GRAPETREE_ELGATO.out.metadata)
 
@@ -662,7 +657,7 @@ workflow {
     def lp_lit_map = params.lp_set.collectEntries { cfg ->
         [(cfg.nb): cfg.lit]
     }
-    filtered_reportree_ch = CHEWBBACA_REPORTREE.out.mlst
+    filtered_reportree_ch = MERGE_REPORTREE_TSV.out.mlst
         .map { strain, nb, allele_tsv ->
             def lit = lp_lit_map[nb]
             return tuple(strain, nb, allele_tsv, lit)

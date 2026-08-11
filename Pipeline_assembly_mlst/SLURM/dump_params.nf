@@ -16,4 +16,5 @@ workflow {
     println "result=${params.result}"
     println "analyse_id=${params.analyse_id}"
     println "partition=${params.rep_partition}"
+    println "metadata=${params.rep_metadata}"
 }

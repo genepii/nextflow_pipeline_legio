@@ -267,8 +267,8 @@ All processes use the following retry strategy:
 | `rep_partition` | ReporTree partitions directory containing partition files named according to the `${strain}_${nb}genes_partitions.tsv` format, e.g. `Lp_4707genes_partitions.tsv` (PATH). |
 | `rep_interest` | Cluster threshold used to define the group of samples included in the zoom analysis (INT). |
 | `rep_site_inclusion` | Minimum proportion of sites required for the zoom analysis (FLOAT). |
-| `rep_min_allele` | Minimum allele threshold for clustering (INT or `none` if no threshold wanted). |
-| `rep_max_allele` | Maximum allele threshold for clustering (INT). |
+| `rep_min_allele` | Minimum allele threshold for clustering (INT or `none` for all clusters / no threshold). |
+| `rep_max_allele` | Maximum allele threshold for clustering (INT or `none` for one cluster at rep_min_allele). |
 | `rep_loci_called` | Minimum proportion of called loci required (FLOAT). |
 | `rep_col_metadata` | Metadata column used for grouping (STR). |
 

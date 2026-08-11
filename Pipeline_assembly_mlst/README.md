@@ -47,7 +47,7 @@ Pipeline_*/
 ## Required
 
 * `-d, --seq_id` : sequencing run ID (ex: for "Legionella-20260331", run_ID = 20260331)
-* A metadata file named `Metadata_{seq_id}.tsv` in `TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow` folder, in the format specified by the file `assets/MLST_Assembly_metadata.xlsx`
+* A TSV metadata file named `Metadata_{seq_id}.txt` in `TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow` folder, in the format specified by the file `assets/MLST_Assembly_metadata.xlsx`
 
 ## Options
 
@@ -134,7 +134,7 @@ By default :
 
 * `-a, --meta` : TSV file containing metadata for all the samples
 
-  * Path to file, `by default : /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_{sequencing_ID}.tsv`
+  * Path to TSV file, `by default : /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_{seq_id}.txt`
   * For more information about the file content, see : `assets/MLST_Assembly_metadata.xlsx`
 
 * `-r, --part` : folder for cgMLST-based HC cluster files (partitions and MLSTchewbbaca)

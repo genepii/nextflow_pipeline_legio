@@ -40,7 +40,7 @@ display_help() {
  	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
  	echo "   -p,--momps     [True/False]    enable MLST research by mompS, by default : False" >&2
  	echo "   -f,--snpeff    [True/False]    enable SnpEff to search for changes other than AMR changes, by default : False" >&2
- 	echo "   -z,--zoom      [str]           enable ReporTree zoom functionality on the samples analysed (by default), all, none, or one sample ID to zoom" >&2
+ 	echo "   -z,--zoom      [str]           enable ReporTree zoom functionality on the samples analysed (analyse), all, none (by default), or sample(s) ID to zoom" >&2
  	echo "   -a,--meta      [path]          TSV file containing metadata for all the samples; must contain columns ID, Year, Origin and Linked_to; by default :
                                                 /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_{sequencing_ID}.tsv" >&2
  	echo "   -r,--part      [path]          folder for cgMLST-based HC cluster file named Lp_{nb}genes_{partitions|MLSTchewbbaca}.tsv, by default :
@@ -213,10 +213,10 @@ while [ $# -gt 0 ]; do
         -z|--zoom)
             zoom="${2:?ERROR: missing value for --zoom}"
 
-            if [[ "$zoom" =~ ^(none|all|[A-Za-z0-9-]{6,100})$ ]]; then
+            if [[ "$zoom" =~ ^(none|all|analyse|[A-Za-z0-9-]{6,100})$ ]]; then
                 :
             else
-                echo "ERROR: invalid value for --zoom (allowed: none, all, or sample_id [6-100 chars: A-Z a-z 0-9 -])" >&2
+                echo "ERROR: invalid value for --zoom (allowed: analyse, none, all or sample ID list)" >&2
                 exit 1
             fi
             shift 2
@@ -268,7 +268,7 @@ result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Assembly-MLS
 
 ## Metadata file content check
 if [[ -z "${metadata_user}" ]]; then
-    metadata_user="${metadata_user_prefix}${sequencing_id}.tsv"
+    metadata_user="${metadata_user_prefix}${sequencing_id}.txt"
 fi
 
 if [[ ! -f "${metadata_user}" ]]; then
@@ -276,9 +276,8 @@ if [[ ! -f "${metadata_user}" ]]; then
     exit 1
 fi
 
-header=$(head -n1 "${metadata_user}")
-
 ### Check if TSV
+header=$(head -n1 "${metadata_user}")
 [[ "${header}" == *$'\t'* ]] || {
     echo "ERROR: ${metadata_user} is not a TSV file." >&2
     exit 1
@@ -299,7 +298,7 @@ find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.
     sample=${base%%_*}
 
     echo "${valid_ids}" | grep -qw "${sample}" || {
-        echo "ERROR: FASTQ sample '${sample}' not found in metadata" >&2
+        echo "ERROR: FASTQ sample '${sample}' not found in Metadata file" >&2
         exit 1
     }
 done
@@ -311,7 +310,7 @@ done
 pipeline_file="${script_dir}/workflow_assembly_mlst.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo ""
 
 ## Copy raw data from input server to calculation engine
@@ -346,7 +345,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ## Start Assembly + MLST analysis
-echo "--- ASSEMBLY + MLST ANALYSIS STARTING ------------------------------------------------------------------------------------"
+echo "--- ASSEMBLY + MLST ANALYSIS STARTING -------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
@@ -395,13 +394,26 @@ rsync -avQ \
 echo ""
 ### Synchronising every files/folders, dev and work not needed
 
+## Replace old partitions.tsv and alleles.tsv by new ones
 timestamp=$(date +"%Y%m%d-%H%M")
-mkdir -p "${partition_folder}/OLD/${timestamp}"
-mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
-rsync -avQ \
-    "${result_folder}"/dev/Rsync/*genes_*.tsv "${partition_folder}"/
+shopt -s nullglob
+copy=false
+for src in "${result_folder}"/dev/Rsync/*genes_*.tsv; do
+    [[ -s "${src}" ]] || continue
+    dst="${partition_folder}/$(basename "${src}")"
+
+    ### Copy only non-empty files with more lines than existing files
+    [[ ! -f "${dst}" || $(wc -l < "${src}") -gt $(wc -l < "${dst}") ]] || continue
+
+    if ! ${copy}; then
+        mkdir -p "${partition_folder}/OLD/${timestamp}"
+        mv "${partition_folder}"/*genes_*.tsv "${partition_folder}/OLD/${timestamp}/" 2>/dev/null
+        copy=true
+    fi
+
+    cp "${src}" "${partition_folder}/"
+done
 echo ""
-### Replace old alleles.tsv and partitions.tsv by new ones
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -411,7 +423,7 @@ echo ""
 echo "Deleting... ${work_folder}"
 rm -r "${work_folder}"
 rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
-#rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
+rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
 echo "Deleting... ${tmp_folder}"
 rm -r "${tmp_folder}"
 
@@ -423,4 +435,4 @@ echo ""
 # echo "L'analyse ASSEMBLY + MLST du run Legionella-${sequencing_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse Assembly + MLST Legionella-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

@@ -16,42 +16,31 @@ nextflow.enable.dsl=2
 // collect fastq files in tuple [sample_id, R1, R2] or [sample_id, R1]
 if (params.paired_end) {
     inputs_ch = Channel
-        .fromFilePairs("${params.input_dir}/*_{R1,R2}.fastq*")
+        .fromFilePairs("${params.input_dir}/*_{R1,R2}{.fastq*,_*.fastq*}")
         .map { id, reads ->
 
-            def base = id
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
-
-            def r1 = reads[0]
-            def r2 = reads[1]
+            // Sample ID = everything before the first '_'
+            def sample_id = reads[0].baseName.split('_')[0]
 
             assert sample_id
-            assert r1
-            assert r2
+            assert reads.size() == 2
 
-            tuple(sample_id, r1, r2)
+            tuple(sample_id, reads[0], reads[1])
         }
-
 } else {
     inputs_ch = Channel
-        .fromPath("${params.input_dir}/*_R1.fastq*")
+        .fromPath("${params.input_dir}/*_R1{.fastq*,_*.fastq*}")
         .map { r1 ->
 
-            def base = r1.baseName
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
+            // Sample ID = everything before the first '_'
+            def sample_id = r1.baseName.split('_')[0]
 
             assert sample_id
-            assert r1
 
             tuple(sample_id, r1, null)
         }
 }
+
 
 // get files for classifier training
 reads_ch = Channel.value(file(params.reads))
@@ -67,8 +56,12 @@ include {
     GENERATE_MANIFEST
     GENERATE_MANIFEST_ALL
     IMPORT_MANIFEST
+    ASSIGN_KRAKEN2
+    MPA_MODIF
+    MPA_TO_KRONA
+    COUNT_FASTQ_READS
+    MPA_FAMILY_BARPLOT
     QC_DEMUX
-    COUNT_READS
     DENOISE_DADA2
     QC_DADA2_META
     QC_DADA2_TABLE
@@ -83,6 +76,10 @@ include {
     CREATE_INFO
     FASTQC_INFO
     MULTIQC_INFO
+    SEQKIT_INFO
+    KRAKEN2_INFO
+    PYTHON_INFO
+    KRONA_INFO
     QIIME_INFO
     FASTP_INFO
     PUBLISH_INFO
@@ -176,19 +173,31 @@ workflow {
 
 
     // ---------------------------
+    // ORGANISM IDENTIFICATION - Kraken2
+    // ---------------------------
+    ASSIGN_KRAKEN2(samples_ch)
+    MPA_MODIF(ASSIGN_KRAKEN2.out)
+    MPA_TO_KRONA(MPA_MODIF.out)
+
+    COUNT_FASTQ_READS(samples_ch)
+    joined_mpamodif_total_ch = MPA_MODIF.out.join(COUNT_FASTQ_READS.out.kraken)
+    MPA_FAMILY_BARPLOT(joined_mpamodif_total_ch)
+
+
+    // ---------------------------
     // COUNT READS + FILTER
     // ---------------------------
-    counted_ch = samples_ch | COUNT_READS
-    counted_parsed_ch = counted_ch.map { sample_id, file_nb, r1, r2 ->
-        def nb_reads = file_nb.text.trim().toInteger()
-        
-        def learn_reads = Math.min(
-            nb_reads,
-            params.reads_learn
-        )
+    counted_parsed_ch = COUNT_FASTQ_READS.out.qiime
+        .map { sample_id, file_nb, r1, r2 ->
+            def nb_reads = file_nb.text.trim().toInteger()
+            
+            def learn_reads = Math.min(
+                nb_reads,
+                params.reads_learn
+            )
 
-        tuple(sample_id, learn_reads, nb_reads, r1, r2)
-    }
+            tuple(sample_id, learn_reads, nb_reads, r1, r2)
+        }
 
     branched = counted_parsed_ch.branch {
         sufficient: it[1] >= params.min_reads
@@ -208,7 +217,7 @@ workflow {
     failed_trim_ch
         .collectFile(
             name: "Failed_TRIM.tsv",
-            storeDir: "${params.result}/4_Failed"
+            storeDir: "${params.result}/LOGS"
         )
 
 
@@ -269,7 +278,7 @@ workflow {
     failed_dada2_ch
         .collectFile(
             name: "Failed_DADA2.tsv",
-            storeDir: "${params.result}/4_Failed"
+            storeDir: "${params.result}/LOGS"
         )
 
 
@@ -312,7 +321,7 @@ workflow {
     taxa_classified_failed_ch
         .collectFile(
             name: "Failed_CLASSIFY.tsv",
-            storeDir: "${params.result}/4_Failed"
+            storeDir: "${params.result}/LOGS"
         )
 
 
@@ -359,7 +368,7 @@ workflow {
     taxa_filtered_failed_ch
         .collectFile(
             name: "Failed_TAXAFILTER.tsv",
-            storeDir: "${params.result}/4_Failed"
+            storeDir: "${params.result}/LOGS"
         )
     
 
@@ -414,11 +423,17 @@ workflow {
         params.vsearch_identity,
         params.vsearch_maxaccepts,
         params.vsearch_query_cov,
-        params.classifier
+        params.classifier,
+
+        params.kraken2_db
     )
     FASTQC_INFO(CREATE_INFO.out)
     MULTIQC_INFO(FASTQC_INFO.out)
-    FASTP_INFO(MULTIQC_INFO.out)
+    SEQKIT_INFO(MULTIQC_INFO.out)
+    KRAKEN2_INFO(SEQKIT_INFO.out)
+    PYTHON_INFO(KRAKEN2_INFO.out)
+    KRONA_INFO(PYTHON_INFO.out)
+    FASTP_INFO(KRONA_INFO.out)
     QIIME_INFO(FASTP_INFO.out)
     PUBLISH_INFO(QIIME_INFO.out)
 }

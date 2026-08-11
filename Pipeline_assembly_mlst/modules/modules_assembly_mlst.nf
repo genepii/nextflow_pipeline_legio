@@ -1310,7 +1310,7 @@ process CHEWBBACA_GRAPETREE {
 
     grapetree \
         -p ${allele_tsv} \
-        -m MSTreeV2 \
+        -m ${params.grape_model} \
         > ${strain}_alleles_${nb}genes\${suffix}.nwk
     """
 }
@@ -1355,14 +1355,14 @@ process LP_GRAPETREE {
 
     grapetree \
         -p tmp.tsv \
-        -m MSTreeV2 \
+        -m ${params.grape_model} \
         > Lp_${software}.nwk
     """
 }
 
 /*
 * Merge user and generated ReporTree MLST allele tables.
-* Input   : user MLST allele TSV + generated MLST allele TSV
+* Input   : generated MLST allele TSV
 * Output  : merged MLST allele TSV + warning report
 * Purpose : retain only shared columns and combine MLST allele for ReporTree
 */
@@ -1523,7 +1523,7 @@ process VISU_REPORTREE {
     zoom_opts=""
     case "${params.rep_zoom}" in
         all)
-            zoom_opts="--zoom-all --site-inclusion ${params.rep_site_inclusion}"
+            zoom_opts="--zoom-all ${params.rep_interest} --site-inclusion ${params.rep_site_inclusion}"
             ;;
         none)
             zoom_opts=""
@@ -1548,7 +1548,11 @@ process VISU_REPORTREE {
 
     threshold_opts=""
     if [ ${params.rep_min_allele} != "none" ]; then
-        threshold_opts="--threshold ${params.rep_min_allele}-${params.rep_max_allele}"
+        if [ ${params.rep_max_allele} != "none" ]; then
+            threshold_opts="--threshold ${params.rep_min_allele}-${params.rep_max_allele}"
+        else
+            threshold_opts="--threshold ${params.rep_min_allele}"
+        fi
     fi
 
     reportree.py \
@@ -1558,8 +1562,8 @@ process VISU_REPORTREE {
         -out ${strain}${nb}genes \
         -l ${cgmlst_ref} \
         --loci-called ${params.rep_loci_called} \
-        --analysis grapetree \
-        --method MSTreeV2 \
+        --analysis ${params.rep_analysis} \
+        --method ${params.rep_model} \
         --columns_summary_report "ST,Year,Origin,Linked_to" \
         --partitions2report 'all' \
         --metadata2report ${params.rep_col_metadata} \

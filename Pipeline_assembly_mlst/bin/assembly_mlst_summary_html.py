@@ -34,6 +34,14 @@ AMR_COLUMNS = [
     "AMR_Nb_Non_Coding"
 ]
 
+# Other summary columns
+OTHER_COLUMNS = [
+    "Sample_ID",
+    "Other_Nb_Mutated_Genes",
+    "Other_Nb_with_Impact",
+    "Other_Nb_Non_Coding"
+]
+
 # Description of Main summary columns
 COLUMN_DESC = {
     "Sample_ID": "Unique sample identifier",
@@ -61,9 +69,9 @@ COLUMN_DESC = {
     "lag": "Allele of lag gene",
     "lpeA": "Allele of lpeA gene",
     "lpeB": "Allele of lpeB gene",
-    "AMR_Nb_Mutated_Genes": "Number of mutated AMR genes detected",
-    "AMR_Nb_with_Impact": "Number of AMR mutations with predicted functional impact",
-    "AMR_Nb_Non_Coding": "Number of non-coding AMR-related variants"
+    "XX_Nb_Mutated_Genes": "Number of mutated XX genes detected",
+    "XX_Nb_with_Impact": "Number of XX mutations with predicted functional impact",
+    "XX_Nb_Non_Coding": "Number of non-coding XX-related variants"
 }
 
 
@@ -103,11 +111,9 @@ def main():
     ]
 
     if amr_cols_without_sample:
-
         amr_tmp = amr_df[amr_cols_without_sample].apply(
             lambda s: s.astype(str).str.strip()
         )
-
         amr_df = amr_df[
             ~amr_tmp.replace(
                 [
@@ -127,6 +133,42 @@ def main():
             .all(axis=1)
         ]
 
+    # create table only if OTHER_COLUMNS are present in input
+    other_df = df.copy()
+    other_available_columns = [
+        c for c in OTHER_COLUMNS
+        if c in other_df.columns
+    ]
+
+    if len(other_available_columns) == len(OTHER_COLUMNS):
+        other_cols_without_sample = [
+            c for c in OTHER_COLUMNS
+            if c != "Sample_ID"
+        ]
+        other_tmp = other_df[other_cols_without_sample].apply(
+            lambda s: s.astype(str).str.strip()
+        )
+        other_df = other_df[
+            ~other_tmp.replace(
+                [
+                    "nan",
+                    "NaN",
+                    "NA",
+                    "Na",
+                    "N/A",
+                    "<NA>",
+                    "null",
+                    "NULL",
+                    ""
+                ],
+                pd.NA
+            )
+            .isna()
+            .all(axis=1)
+        ][OTHER_COLUMNS]
+    else:
+        other_df = pd.DataFrame()
+        
     # Collect strain names for report sections
     strains = (
         sorted(df["FastANI_strain"].dropna().unique())
@@ -329,6 +371,7 @@ Assembly &amp; MLST Summary
 </li>
 
 <li><a href="#AMR"><b>AMR Summary</b></a></li>
+<li><a href="#OTHER"><b>Other Summary</b></a></li>
 <li><a href="#Settings"><b>Settings</b></a></li>
 </ol>
 
@@ -482,6 +525,48 @@ class="amr-alert"
 
 </div>
 
+{% if not other_df.empty %}
+
+<hr>
+
+<div class="section" id="OTHER">
+
+<h2>Other Summary</h2>
+
+<div class="table-wrapper">
+<table>
+
+<tr>
+{% for col in other_columns %}
+<th>{{ col }}</th>
+{% endfor %}
+</tr>
+
+{% for _, row in other_df.iterrows() %}
+
+{% set impact = row["Other_Nb_with_Impact"]|default("0") %}
+
+<tr
+{% if impact|float != 0 %}
+class="amr-alert"
+{% endif %}
+>
+
+{% for col in other_columns %}
+<td>{{ row[col] }}</td>
+{% endfor %}
+
+</tr>
+
+{% endfor %}
+
+</table>
+</div>
+
+</div>
+
+{% endif %}
+
 <hr>
 
 <div class="section" id="Settings">
@@ -508,10 +593,12 @@ class="amr-alert"
         date=datetime.now().strftime("%A %d %B %Y, %H:%M:%S"),
         df=df,
         amr_df=amr_df,
+        other_df=other_df,
         strains=strains,
         main_columns=MAIN_COLUMNS,
         column_desc=COLUMN_DESC,
         amr_columns=AMR_COLUMNS,
+        other_columns=OTHER_COLUMNS,
         software_text=software_text,
         amr_warning=amr_warning(df)
     )
