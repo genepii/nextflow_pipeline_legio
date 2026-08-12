@@ -371,8 +371,8 @@ if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     --rep_zoom "${zoom}" \
     --rep_metadata "${metadata_user}" \
     --rep_partition "${partition_folder}" \
-    -with-trace "${result_folder}/trace_${sequencing_id}_${analyse_id}.txt" \
-    -with-report "${result_folder}/report_${sequencing_id}_${analyse_id}.html"
+    -with-trace "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.txt" \
+    -with-report "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.html"
 then
     LOG="error"
 fi

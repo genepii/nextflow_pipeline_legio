@@ -249,8 +249,8 @@ if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     --rep_zoom "${zoom}" \
     --metadata "${metadata_user}" \
     --snippy_dir "${db_snippy}" \
-    -with-trace "${result_folder}/trace_${comparison_id}_${analyse_id}.txt" \
-    -with-report "${result_folder}/report_${comparison_id}_${analyse_id}.html"
+    -with-trace "${result_folder}/LOGS/nextflow_${comparison_id}_${analyse_id}.txt" \
+    -with-report "${result_folder}/LOGS/nextflow_${comparison_id}_${analyse_id}.html"
 then
     LOG="error"
 fi

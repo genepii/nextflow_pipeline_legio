@@ -60,7 +60,7 @@ When launching in SLURM mode (via NGS-WEB or manual submission), the following r
   * `Legionella-Amplicons` for Blast or Qiime2 pipelines
   * `Legionella-Nested-SBT` for El Gato pipeline
   * `Legionella` for MLST pipeline + Metadata file
-  * Metadata file
+  * Metadata file for Strain Comparison pipeline
 * When launched via NGS-WEB:
 
   * Only the version of the script stored in the INRIA GitLab repository is executed.

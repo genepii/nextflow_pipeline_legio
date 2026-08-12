@@ -286,8 +286,8 @@ if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     --downsampling "${downsampling}" \
     --bbtools_downsampled "${down_to}" \
     --kraken2_assign "${kraken}" \
-    -with-trace "${result_folder}/trace_${sequencing_id}_${analyse_id}.txt" \
-    -with-report "${result_folder}/report_${sequencing_id}_${analyse_id}.html"
+    -with-trace "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.txt" \
+    -with-report "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.html"
 then
     LOG="error"
 fi
