@@ -1,0 +1,18 @@
+Bootstrap: docker
+From: quay.io/biocontainers/snippy:4.6.0--hdfd78af_6
+
+%labels
+    Author nextflow_pipeline_legio
+    Version Snippy 4.6.0
+
+%help
+    Singularity image for rapid bacterial variant calling and core SNP alignment (Snippy 4.6.0).
+
+%environment
+    export PATH=/usr/local/bin:/opt/conda/bin:$PATH
+
+%runscript
+    exec snippy "$@"
+
+%test
+    snippy --version

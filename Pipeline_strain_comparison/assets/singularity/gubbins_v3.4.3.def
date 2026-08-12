@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: quay.io/biocontainers/gubbins:3.4.3--py310hfc0ef84_1
+
+%labels
+    Author nextflow_pipeline_legio
+    Version Gubbins 3.4.3
+
+%help
+    Singularity image for bacterial recombination detection (Gubbins 3.4.3).
+
+%environment
+    export NUMBA_CACHE_DIR=/tmp/numba_cache
+
+%post
+    mkdir -p /tmp/numba_cache
+
+%runscript
+    exec "$@"
+
+%test
+    run_gubbins.py --version

@@ -16,38 +16,26 @@ nextflow.enable.dsl=2
 // collect fastq files in tuple [sample_id, R1, R2] or [sample_id, R1]
 if (params.paired_end) {
     inputs_ch = Channel
-        .fromFilePairs("${params.input_dir}/*_{R1,R2}.fastq*")
+        .fromFilePairs("${params.input_dir}/*_{R1,R2}{.fastq*,_*.fastq*}")
         .map { id, reads ->
 
-            def base = id
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
-
-            def r1 = reads[0]
-            def r2 = reads[1]
+            // Sample ID = everything before the first '_'
+            def sample_id = reads[0].baseName.split('_')[0]
 
             assert sample_id
-            assert r1
-            assert r2
+            assert reads.size() == 2
 
-            tuple(sample_id, r1, r2)
+            tuple(sample_id, reads[0], reads[1])
         }
-
 } else {
     inputs_ch = Channel
-        .fromPath("${params.input_dir}/*_R1.fastq*")
+        .fromPath("${params.input_dir}/*_R1{.fastq*,_*.fastq*}")
         .map { r1 ->
 
-            def base = r1.baseName
-
-            def sample_id = base.contains('_') ?
-                base.split('_')[0] :
-                base.replaceFirst(/_R1.*/, '')
+            // Sample ID = everything before the first '_'
+            def sample_id = r1.baseName.split('_')[0]
 
             assert sample_id
-            assert r1
 
             tuple(sample_id, r1, null)
         }

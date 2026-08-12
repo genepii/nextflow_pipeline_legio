@@ -1,0 +1,52 @@
+Bootstrap: docker
+From: python:3.11.9-slim
+
+%labels
+    Author nextflow_pipeline_legio
+    Tool Python MLST / MPA / VCF parsing & plotting / ETE3 tree visualization
+    Version python3.11.9 + pinned scientific stack
+    Build reproducible true
+
+%environment
+    export PYTHONUNBUFFERED=1
+    export LC_ALL=C
+    export LANG=C
+    export MPLBACKEND=Agg
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+        build-essential \
+        libglib2.0-0 \
+        libxrender1 \
+        libsm6 \
+        libxext6 \
+        libqt5svg5 \
+        libfontconfig1 \
+        && rm -rf /var/lib/apt/lists/*
+
+    pip install --no-cache-dir \
+        pandas==2.2.2 \
+        numpy==1.26.4 \
+        matplotlib==3.9.0 \
+        jinja2==3.1.4 \
+        ete3==3.1.3 \
+        PyQt5==5.15.10
+
+%runscript
+    exec "$@"
+
+%test
+    python3 -c "
+import sys
+import argparse
+import gzip
+import re
+import pandas as pd
+import matplotlib.pyplot as plt
+from collections import defaultdict
+import jinja2
+from ete3 import Tree, TreeStyle
+from PyQt5 import QtCore
+print('Environment OK')
+"
