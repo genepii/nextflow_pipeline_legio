@@ -6,10 +6,11 @@ A collection of Nextflow pipelines dedicated to the analysis of Legionellosis-re
 
 To ensure simplicity and independence between tools and workflows, each pipeline has its own dedicated files, all of which include the same tag in their filenames for identification purposes. This is a decision made by the laboratory, and it is therefore possible that certain parts or processes may be similar across multiple pipelines.
 
-- `qiime2_amplicons` for QIIME2 Amplicons Pipeline
+- `assembly_mlst` for MLST and Assembly Pipeline
 - `blast_amplicons` for BLASTN Amplicons Pipeline
 - `elgato_sbt` for EL GATO Nested SBT Pipeline
-- `assembly_mlst` for MLST and Assembly Pipeline
+- `qiime2_amplicons` for QIIME2 Amplicons Pipeline
+- `strain_comparison` for SNPs and MLST Pipeline
 
 */!\ The configuration files and values provided here are for information purposes only if the analyses are not run on machines belonging to HCL. The paths and certain options have been configured for those machines, and only the underlying logic and software can be applied in other environments.*
 
@@ -37,6 +38,12 @@ Pipeline_*/
 
 ---
 
+## User instructions for execution outside the HCL pipeline (SLURM / local)
+
+The `.sh` and `.sbatch` launch scripts are closely tied to the internal structure and configuration of the HCL environment. Therefore, users who wish to run the pipeline through Bash or SLURM are encouraged to develop their own launch scripts according to their local infrastructure and requirements. However, the pipeline should work as expected when launched directly with Nextflow. In this case, only the configuration file needs to be adapted to match the local environment and available resources.
+
+---
+
 ## User instructions for HCL pipeline execution (SLURM / local)
 
 This document clarifies the essential rules for running the pipelines in the HCL context. The order below follows operational priority and execution safety.
@@ -52,7 +59,8 @@ When launching in SLURM mode (via NGS-WEB or manual submission), the following r
 
   * `Legionella-Amplicons` for Blast or Qiime2 pipelines
   * `Legionella-Nested-SBT` for El Gato pipeline
-  * `Legionella` for MLST pipeline
+  * `Legionella` for MLST pipeline + Metadata file
+  * Metadata file
 * When launched via NGS-WEB:
 
   * Only the version of the script stored in the INRIA GitLab repository is executed.
