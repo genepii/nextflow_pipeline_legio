@@ -630,14 +630,14 @@ workflow {
             tuple(s, nb, f)
         }
 
-    // ReporTree only on valid input files (no .filt.tsv)
+    // ReporTree only on valid input files (no .extract.tsv)
     filtered_chewbbaca_ch = reportree_ch
         .filter { s, nb, f ->
             def lines = f.text.readLines().findAll { it.trim() }
             def n_lines = lines.size()
             def n_cols = n_lines > 0 ? lines[0].split('\t', -1).size() : 0
 
-            !f.name.endsWith(".filt.tsv") &&
+            !f.name.endsWith(".extract.tsv") &&
             n_cols >= 2
         }
     CHEWBBACA_REPORTREE(filtered_chewbbaca_ch)
@@ -649,6 +649,7 @@ workflow {
             def n_lines = lines.size()
             n_lines > 3
         }
+
     MERGE_REPORTREE_TSV(filtered_mergedchewbbaca_ch)
 
     LP_MERGE_METADATA(LP_GRAPETREE_ELGATO.out.metadata)

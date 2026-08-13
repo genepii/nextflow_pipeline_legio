@@ -44,19 +44,19 @@ process QC_FASTQC {
 */
 process QC_MULTIQC {
     label 'multiqc'
-    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
+    publishDir "${params.result}/0_FastQC", mode: 'copy'
 
     input:
         val(read_type)
         path(fastqc_zip)
 
     output:
-        path("General_multiQC_report.html")
+        path("${read_type}_multiQC_report.html")
 
     script:
     """
     multiqc ${fastqc_zip} \
-        --filename "General_multiQC_report.html" \
+        --filename "${read_type}_multiQC_report.html" \
         --force
     """
 }
@@ -1217,7 +1217,7 @@ process MLST_CHEWBBACA {
 */
 process EXTRACT_ALLELES {
     label 'chewbbaca'
-    publishDir "${params.result}/7_chewBBACA", mode: 'copy'
+    publishDir "${params.result}/7_chewBBACA/Target_genes", mode: 'copy'
     
     input:
         tuple val(strain),
@@ -1227,7 +1227,7 @@ process EXTRACT_ALLELES {
     output:
         tuple val(strain),
             val(nb),
-            path("${strain}_alleles_${nb}genes.filt.tsv")
+            path("${strain}_alleles_${nb}genes.extract.tsv")
 
     script:
     def allele_args = params.alleles_set.collect {
@@ -1237,7 +1237,7 @@ process EXTRACT_ALLELES {
     assembly_mlst_extract_alleles.sh \
         "${allele_args}" \
         ${allele_tsv} \
-        ${strain}_alleles_${nb}genes.filt.tsv
+        ${strain}_alleles_${nb}genes.extract.tsv
     """
 }
 
@@ -1278,7 +1278,7 @@ process MERGE_EXTRACT_ALLELES {
 */
 process CHEWBBACA_GRAPETREE {
     label 'grapetree'
-    publishDir "${params.result}/8_GrapeTree", mode: 'copy'
+    publishDir "${params.result}/8_Clustering/${strain}-${nb}genes_GrapeTree", mode: 'copy'
 
     input:
         tuple val(strain),
@@ -1292,7 +1292,7 @@ process CHEWBBACA_GRAPETREE {
     """
     suffix=""
     case "${allele_tsv}" in
-        *.filt.tsv) suffix=".filt" ;;
+        *.extract.tsv) suffix=".extract" ;;
     esac
     
     n_profiles=\$(
@@ -1323,7 +1323,7 @@ process CHEWBBACA_GRAPETREE {
 */
 process LP_GRAPETREE {
     label 'grapetree'
-    publishDir "${params.result}/8_GrapeTree", mode: 'copy'
+    publishDir "${params.result}/8_Clustering/${software}_GrapeTree", mode: 'copy'
 
     input:
         val(software)
@@ -1372,7 +1372,7 @@ process MERGE_REPORTREE_TSV {
     publishDir "${params.result}/dev/Rsync", mode: 'copy',
         pattern: "*genes_MLSTchewbbaca.tsv"
     publishDir "${params.result}/dev/9_ReporTree", mode: 'copy',
-        pattern: "*"
+        pattern: "*.*.tsv"
 
     input:
         tuple val(strain),
@@ -1495,8 +1495,8 @@ process VISU_REPORTREE {
 
     publishDir "${params.result}/dev/Rsync", mode: 'copy',
         pattern: "*_*genes_partitions.tsv"
-    publishDir "${params.result}/9_ReporTree", mode: 'copy',
-        pattern: "*genes/**"
+    publishDir "${params.result}/8_Clustering", mode: 'copy',
+        pattern: "*genes_ReporTree/*"
 
     input:
         tuple val(strain),
@@ -1506,17 +1506,17 @@ process VISU_REPORTREE {
         path(metadata_tsv)
 
     output:
-        path("${strain}_${nb}genes/*"), emit: folder
+        path("${strain}_${nb}genes_ReporTree/*"), emit: folder
         path("${strain}_${nb}genes_partitions.tsv"), emit: partition
 
     script:
     """
-    mkdir -p ${strain}_${nb}genes
+    mkdir -p ${strain}_${nb}genes_ReporTree
     n_profiles=\$(tail -n +2 ${allele_tsv} | cut -f2- | sort -u | wc -l)
 
     if [ "\$n_profiles" -lt 2 ]; then
         echo "${strain}_alleles_${nb}genes : Only one unique allelic profile found" \
-            > ${strain}_${nb}genes/Warning_ReporTree.txt
+            > ${strain}_${nb}genes_ReporTree/Warning_ReporTree.txt
         exit 0
     fi
 
@@ -1571,8 +1571,8 @@ process VISU_REPORTREE {
         \$zoom_opts \
         \$threshold_opts
 
-    mv ${strain}${nb}genes* ${strain}_${nb}genes/.
-    cp ${strain}_${nb}genes/${strain}${nb}genes_partitions.tsv ${strain}_${nb}genes_partitions.tsv
+    mv ${strain}${nb}genes* ${strain}_${nb}genes_ReporTree/.
+    cp ${strain}_${nb}genes_ReporTree/${strain}${nb}genes_partitions.tsv ${strain}_${nb}genes_partitions.tsv
     """
 }
 
