@@ -1,4 +1,4 @@
-# SNP + cgMLST Pipeline (Nextflow)
+# Strain Comparison Pipeline (Nextflow)
 
 This pipeline performs comparative genomic analyses between strains defined in a metadata file containing sample IDs, sequence types (ST), collection years and origin. It automatically retrieves the corresponding FASTA and FASTQ files, validates the input list, and performs multiple complementary analyses : SNP comparison, Phylogenetic analysis and/or cgMLST analysis.
 
@@ -37,7 +37,7 @@ Pipeline_*/
 
 ## Required
 
-* `-d, --compare` : comparison run ID (ex: for "Strains_20260730", comparison_ID = 20260730)
+* `-d, --compare` : comparison ID (ex: for "Strains_20260730", comparison_ID = 20260730)
 * A TSV metadata file named `Strains_{comparison_id}.txt` in `TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow` folder, in the format specified by the file `assets/COMPARISON_strains_metadata.xlsx`
 
 ## Options

@@ -31,6 +31,7 @@ include {
     CHECK_SNIPPY_CORE as CHECK_INTRA_CORE
     SNP_SNIPPY_CORE as INTRA_CORE
     SNP_DIST_CORE as INTRA_DIST_CORE
+    SNP_DIST_STATS as INTRA_DIST_STATS
     SNIPPY_CORE_LOG as INTRA_LOG
     PHYLOTREE_IQTREE as INIT_IQTREE
     TREE_LOG as INIT_LOG
@@ -42,6 +43,7 @@ include {
     SNP_SNIPPY as ST_SNIPPY
     SNP_SNIPPY_CORE as ST_CORE
     SNP_DIST_CORE as ST_DIST_CORE
+    SNP_DIST_STATS as ST_DIST_STATS
     SNIPPY_CORE_LOG as ST_LOG
     PHYLOTREE_IQTREE as FILT_IQTREE
     TREE_LOG as FILT_LOG
@@ -156,7 +158,9 @@ workflow {
         .collect()
     INTRA_LOG("Intragroup", intra_logs_ch)
 
-    INTRA_DIST_CORE(INTRA_CORE.out.core)
+    INTRA_DIST_CORE(INTRA_CORE.out.full_clean, INTRA_CORE.out.core)
+
+    INTRA_DIST_STATS(INTRA_DIST_CORE.out.dist)
 
 
     // ---------------------------
@@ -273,13 +277,19 @@ workflow {
 
     ST_LOG("ST", ST_CORE.out.log.collect())
 
-    ST_DIST_CORE(ST_CORE.out.core)
+    ST_DIST_CORE(ST_CORE.out.full_clean, ST_CORE.out.core)
+
+    ST_DIST_STATS(ST_DIST_CORE.out.dist)
 
 
     // ---------------------------
     // PHYLOGENY - ref ST vs fastq + previous
     // ---------------------------
-    INIT_IQTREE("Init_ST", ST_CORE.out.alignment)
+    cleaned_core_ch = ST_CORE.out.full_clean
+        .map { comparison, type, reference, alignment ->
+            tuple(comparison, alignment)
+        }
+    INIT_IQTREE("Init_ST", cleaned_core_ch)
 
     init_log_ch = INIT_IQTREE.out.log
         .map { type, log ->
@@ -290,7 +300,7 @@ workflow {
 
     INIT_PLOT(INIT_IQTREE.out.tree, BUILD_METADATA.out)
 
-    FILTER_GUBBINS("ST", ST_CORE.out.alignment)
+    FILTER_GUBBINS("ST", cleaned_core_ch)
 
     gubbins_log_ch = FILTER_GUBBINS.out.log
         .map { type, log ->

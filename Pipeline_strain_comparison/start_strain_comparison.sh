@@ -227,7 +227,7 @@ nf_exec="${script_dir}/../nextflow_25.10.4"
 echo "START -----------------------------------------------------------------------------------------------------------------"
 echo ""
 
-## Copy raw data from input server to calculation engine
+## Start SNP and cgMLST Comparison
 echo "--- STRAIN COMPARISON ANALYSIS STARTING -------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""

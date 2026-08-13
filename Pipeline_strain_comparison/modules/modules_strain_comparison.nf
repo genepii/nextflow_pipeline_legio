@@ -331,15 +331,19 @@ process SNP_SNIPPY_CORE {
     output:
         tuple val(comparison),
             path("1_Snippy-${type}/*/*"),
-            emit: snippy_core
-        tuple val(comparison),
-            path("1_Snippy-${type}/*/core.clean.aln"), 
-            emit: alignment
+            emit: dir
         tuple val(comparison),
             val(type),
+            path(reference),
+            path("1_Snippy-${type}/*/core.clean.aln"), 
+            emit: full_clean
+        tuple val(comparison),
+            val(type),
+            path(reference),
             path("1_Snippy-${type}/*/core.aln"), 
             emit: core
-        path("snippy-core_${comparison}.log"), emit: log
+        path("snippy-core_${comparison}.log"), 
+            emit: log
 
     script:
     """
@@ -370,9 +374,8 @@ process SNP_SNIPPY_CORE {
 }
 // NB : snippy-core produces useful outputs on failure, so capture errors and use || true to avoid failure.
 
-
 /*
-* Compute pairwise SNP distances from a core SNP alignment
+* Compute pairwise SNP distances from core SNP alignment
 * Input   : comparison group identifier + output directory + core SNP alignment FASTA
 * Output  : pairwise SNP distance matrix
 * Purpose : calculate pairwise distances between strains within the same Comparison group
@@ -384,10 +387,23 @@ process SNP_DIST_CORE {
     input:
         tuple val(comparison),
             val(type),
+            path(reference),
+            path(clean)
+        tuple val(comparison_2),
+            val(type_2),
+            path(reference_2),
             path(core)
 
     output:
-        path("1_Snippy-${type}/*/distances_w_recomb.tsv")
+        tuple val(comparison),
+            val(type),
+            path(reference),
+            path(clean),
+            path("1_Snippy-${type}/*/clean_distances-w-recomb.tsv"),
+            path(core),
+            path("1_Snippy-${type}/*/distances-w-recomb.tsv"),
+            emit: dist
+        path("1_Snippy-${type}/*/*distances-w-recomb.*")
 
     script:
     """
@@ -399,10 +415,64 @@ process SNP_DIST_CORE {
 
     mkdir -p \${out}
 
+    touch "\${out}/distances-w-recomb.tsv"
+    touch "\${out}/clean_distances-w-recomb.tsv"
+
     if [ ! -s "${core}" ]; then
-        touch "\${out}/distances_w_recomb.tsv"
+        echo -e "The distances could not be calculated, see LOGS folder." > "\${out}/distances-w-recomb.log"
     else
-        afa-pairwise.pl ${core} > "\${out}/distances_w_recomb.tsv"
+        afa-pairwise.pl ${core} > "\${out}/distances-w-recomb.tsv"
+        afa-pairwise.pl ${clean} > "\${out}/clean_distances-w-recomb.tsv"
+    fi
+    """
+}
+
+/*
+* Compute SNP distance statistics from core and clean SNP alignments
+* Input   : comparison group identifier + type + clean/core SNP alignments and distance matrices
+* Output  : SNP distance statistics files for core and clean alignments
+* Purpose : calculate pairwise SNP distance statistics between strains
+*/
+process SNP_DIST_STATS {
+    label 'python'
+    publishDir "${params.result}", mode: "copy"
+
+    input:
+        tuple val(comparison),
+            val(type),
+            path(reference),
+            path(clean),
+            path(clean_distance),
+            path(core),
+            path(core_distance)
+
+    output:
+        path("1_Snippy-${type}/*/*distances-w-recomb.*")
+
+    script:
+    """
+    if [[ "${type}" == "ST" ]]; then
+        out="1_Snippy-${type}/${type}${comparison}"
+    else
+        out="1_Snippy-${type}/${comparison}"
+    fi
+
+    mkdir -p \${out}
+    
+    if [ ! -s "${core}" ]; then
+        echo -e "The distances could not be calculated, see LOGS folder." > "\${out}/distances-w-recomb.log"
+    else
+        strain_comparison_pairwise_stats.py \
+            -i ${core_distance} \
+            -o "\${out}/distances-w-recomb.stats.txt" \
+            -a ${core} \
+            -r ${reference}
+            
+        strain_comparison_pairwise_stats.py \
+            -i ${clean_distance} \
+            -o "\${out}/clean_distances-w-recomb.stats.txt" \
+            -a ${clean} \
+            -r ${reference}
     fi
     """
 }

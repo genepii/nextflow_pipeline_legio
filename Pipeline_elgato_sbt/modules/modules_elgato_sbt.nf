@@ -40,19 +40,19 @@ process QC_FASTQC {
 */
 process QC_MULTIQC {
     label 'multiqc'
-    publishDir "${params.result}/0_QC/${read_type}", mode: 'copy'
+    publishDir "${params.result}/0_QC", mode: 'copy'
 
     input:
         val(read_type)
         path(fastqc_zip)
 
     output:
-        path("General_multiQC_report.html")
+        path("${read_type}_multiQC_report.html")
 
     script:
     """
     multiqc ${fastqc_zip} \
-        --filename "General_multiQC_report.html" \
+        --filename "${read_type}_multiQC_report.html" \
         --force
     """
 }
