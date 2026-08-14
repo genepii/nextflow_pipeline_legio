@@ -402,8 +402,8 @@ for src in "${result_folder}"/dev/Rsync/*genes_*.tsv; do
     [[ -s "${src}" ]] || continue
     dst="${partition_folder}/$(basename "${src}")"
 
-    ### Copy only non-empty files with more lines than existing files
-    [[ ! -f "${dst}" || $(wc -l < "${src}") -gt $(wc -l < "${dst}") ]] || continue
+    ### Copy if destination is missing or content differs
+    [[ ! -f "${dst}" || ! cmp -s "${src}" "${dst}" ]] || continue
 
     if ! ${copy}; then
         mkdir -p "${partition_folder}/OLD/${timestamp}"
