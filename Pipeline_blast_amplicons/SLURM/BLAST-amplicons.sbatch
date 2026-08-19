@@ -13,6 +13,7 @@
 #SBATCH --constraint=public,dump
 
 set -e
+
 ### include/nextflow-conf.bash ###
 
 # In local storage allocated by SLURM 
@@ -22,7 +23,7 @@ cd ${SCRATCH}
 #                                                                              #
 # BLAST-amplicons.sbatch version 1                                             #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-07                                        #
+# Aurelie PETICCA, last update: 2026-08                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
 # Aim: SLURM launch for Blastn Amplicons nextflow pipeline                     #

@@ -13,6 +13,7 @@
 #SBATCH --constraint=public,dump
 
 set -e
+
 ### include/nextflow-conf.bash ###
 
 # In local storage allocated by SLURM 
@@ -22,7 +23,7 @@ cd ${SCRATCH}
 #                                                                              #
 # MLST-assembly.sbatch version 1                                               #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-07                                        #
+# Aurelie PETICCA, last update: 2026-08                                        #
 # Christophe GINEVRA                                                           #
 #                                                                              #
 # Aim: SLURM launch for Assembly + MLST nextflow pipeline                      #
@@ -34,7 +35,7 @@ cd ${SCRATCH}
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch MLST-assembly.sh -s NGS-WEB_serie [options]" >&2
+    echo "Usage: sbatch MLST-assembly.sbatch -s NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
     echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
@@ -46,7 +47,7 @@ display_help() {
 }
 
 usage() {
-    echo "Usage: sbatch MLST-assembly.sh -s <YYYYMMDD> [options]" >&2
+    echo "Usage: sbatch MLST-assembly.sbatch -s <YYYYMMDD> [options]" >&2
     echo >&2
     echo "Options:" >&2
     echo "  -s             NGS-WEB series (required)" >&2

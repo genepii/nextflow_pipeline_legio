@@ -13,6 +13,7 @@
 #SBATCH --constraint=public,dump
 
 set -e
+
 ### include/nextflow-conf.bash ###
 
 # In local storage allocated by SLURM 
