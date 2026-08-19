@@ -184,7 +184,7 @@ fi
 
 ################################################################################
 # start script
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo
 
 ## Copy raw data from input server to calculation engine
@@ -272,4 +272,4 @@ echo
 # echo "L'analyse QIIME2 AMPLICONS du run Legionella-Amplicons-${ngsweb_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse QIIME2 Legionella-Amplicons-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

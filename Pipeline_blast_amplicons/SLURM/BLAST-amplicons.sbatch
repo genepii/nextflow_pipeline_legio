@@ -184,7 +184,7 @@ fi
 
 ################################################################################
 # start script
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo
 
 ## Copy raw data from input server to calculation engine
@@ -219,7 +219,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Start Blast analysis
-echo "--- BLAST AMPLICONS ANALYSIS STARTING ------------------------------------------------------------------------------------"
+echo "--- BLAST AMPLICONS ANALYSIS STARTING -------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
@@ -271,4 +271,4 @@ echo
 # echo "L'analyse BLAST AMPLICONS du run Legionella-Amplicons-${ngsweb_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse BLAST Legionella-Amplicons-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

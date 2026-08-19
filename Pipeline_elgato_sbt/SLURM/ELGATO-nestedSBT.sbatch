@@ -184,7 +184,7 @@ fi
 
 ################################################################################
 # start script
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo
 
 ## Copy raw data from input server to calculation engine
@@ -219,7 +219,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Start Nested analysis
-echo "--- EL GATO NESTED SBT ANALYSIS STARTING ------------------------------------------------------------------------------------"
+echo "--- EL GATO NESTED SBT ANALYSIS STARTING ----------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
@@ -272,4 +272,4 @@ echo
 # echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${ngsweb_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse EL GATO NESTED SBT Legionella-Nested-SBT-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

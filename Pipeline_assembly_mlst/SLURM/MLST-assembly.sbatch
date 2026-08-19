@@ -211,7 +211,7 @@ done
 
 ################################################################################
 # start script
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo
 
 ## Copy raw data from input server to calculation engine
@@ -246,7 +246,7 @@ echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Start Assembly + MLST analysis
-echo "--- ASSEMBLY + MLST ANALYSIS STARTING ------------------------------------------------------------------------------------"
+echo "--- ASSEMBLY + MLST ANALYSIS STARTING -------------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
@@ -308,4 +308,4 @@ echo
 # echo "L'analyse ASSEMBLY + MLST du run Legionella-${ngsweb_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse ASSEMBLY + MLST Legionella-${ngsweb_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"
