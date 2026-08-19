@@ -260,8 +260,8 @@ echo
     -c "${config_file}" \
     --suffix "${ngsweb_id}" \
     -profile slurm \
-    -with-trace "${SCRATCH}/LOGS/nextflow_${ngsweb_id}.txt" \
-    -with-report "${SCRATCH}/LOGS/nextflow_${ngsweb_id}.html"
+    -with-trace "${result_folder}/LOGS/nextflow_${ngsweb_id}.txt" \
+    -with-report "${result_folder}/LOGS/nextflow_${ngsweb_id}.html"
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"

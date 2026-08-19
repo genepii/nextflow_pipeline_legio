@@ -199,8 +199,8 @@ echo ""
     -c "${config_file}" \
     --suffix "${comparison_id}" \
     -profile slurm \
-    -with-trace "${SCRATCH}/LOGS/nextflow_${comparison_id}.txt" \
-    -with-report "${SCRATCH}/LOGS/nextflow_${comparison_id}.html"
+    -with-trace "${result_folder}/LOGS/nextflow_${comparison_id}.txt" \
+    -with-report "${result_folder}/LOGS/nextflow_${comparison_id}.html"
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
