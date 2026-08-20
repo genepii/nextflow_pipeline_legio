@@ -245,6 +245,7 @@ process ASSIGN_KRAKEN2 {
     kraken2 \
         --db "${params.kraken2_db}" \
         --paired \
+        --memory-mapping \
         --classified-out "${sample_id}#.fastq" \
         --output "${sample_id}.out" \
         ${output_format} \

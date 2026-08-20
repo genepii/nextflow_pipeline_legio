@@ -231,6 +231,8 @@ echo
     "${pipeline_nf}" \
     -c "${SCRATCH}/SLURM.conf" \
     -c "${config_file}" \
+    -w "${work_folder}" \
+    --input_dir "${tmp_folder}" \
     --suffix "${ngsweb_id}" \
     -profile slurm \
     -with-trace "${result_folder}/LOGS/nextflow_${ngsweb_id}.txt" \

@@ -197,6 +197,8 @@ echo ""
     "${pipeline_nf}" \
     -c "${SCRATCH}/SLURM.conf" \
     -c "${config_file}" \
+    -w "${work_folder}" \
+    --tmp_dir "${tmp_folder}" \
     --suffix "${comparison_id}" \
     -profile slurm \
     -with-trace "${result_folder}/LOGS/nextflow_${comparison_id}.txt" \
