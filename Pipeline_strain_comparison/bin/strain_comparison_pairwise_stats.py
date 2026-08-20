@@ -212,7 +212,7 @@ def calculate_global_statistics(matrix, pairs, reference):
     statistics = {
         "number_of_samples": len(matrix),
         "number_of_unique_pairs": len(pairs),
-        "reference": reference,
+        "reference": str(Path(reference).name),
     }
 
     statistics.update(
@@ -366,21 +366,21 @@ def write_results(
     with output_file.open("w", encoding="utf-8") as output:
 
         # --------------------------------------------------------------
-        # General statistics
+        # General statistics - all pair
         # --------------------------------------------------------------
-        output.write("#general statistics\n")
+        output.write("# GLOBAL PAIRWISE STATISTICS\n")
 
         write_statistics(
             output,
             global_statistics,
         )
 
-        output.write("\n")
+        output.write("\n################################################################################\n")
 
         # --------------------------------------------------------------
         # Statistics for each sample used as a reference
         # --------------------------------------------------------------
-        output.write("#pair statistics\n")
+        output.write("# REFERENCE-BASED STATISTICS\n")
 
         for sample, statistics in reference_statistics.items():
             output.write(
@@ -397,12 +397,10 @@ def write_results(
         # --------------------------------------------------------------
         # Pairwise SNP information
         # --------------------------------------------------------------
-        output.write("#snps detected\n")
+        output.write("################################################################################\n")
+        output.write("# PAIRWISE SNP DETAILS\n")
 
-        output.write(
-            "sample_1\tsample_2\tsnp_count\t"
-            "compared_positions\tsnp_distance\n"
-        )
+        output.write("sample_1\tsample_2\tsnp_count\tcompared_positions\tsnp_distance\n")
 
         for (
             sample_1,

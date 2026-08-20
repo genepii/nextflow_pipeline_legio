@@ -387,17 +387,17 @@ process SNP_DIST_CORE {
     input:
         tuple val(comparison),
             val(type),
-            path(reference),
+            val(reference),
             path(clean)
         tuple val(comparison_2),
             val(type_2),
-            path(reference_2),
+            val(reference_2),
             path(core)
 
     output:
         tuple val(comparison),
             val(type),
-            path(reference),
+            val(reference),
             path(clean),
             path("1_Snippy-${type}/*/clean_distances-w-recomb.tsv"),
             path(core),
@@ -440,7 +440,7 @@ process SNP_DIST_STATS {
     input:
         tuple val(comparison),
             val(type),
-            path(reference),
+            val(reference),
             path(clean),
             path(clean_distance),
             path(core),

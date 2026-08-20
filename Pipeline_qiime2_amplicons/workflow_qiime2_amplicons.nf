@@ -113,7 +113,7 @@ workflow {
     // ---------------------------
     // IMPORT CLASSIFIER
     // ---------------------------
-    classifier_path = file("./assets/${params.db}_classifier.qza")
+    classifier_path = file("${params.path_db}/${params.db}_classifier.qza")
     def use_reference = params.classifier in ['blast', 'vsearch']
 
     if (use_reference) {
@@ -412,7 +412,7 @@ workflow {
         params.reads_learn,
         params.fold_parents,
 
-        params.db,
+        "${params.path_db}/${params.db}_classifier.qza",
         params.reads,
         params.taxa,
 
