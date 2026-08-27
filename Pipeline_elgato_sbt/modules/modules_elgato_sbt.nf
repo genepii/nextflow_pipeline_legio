@@ -12,7 +12,7 @@ nextflow.enable.dsl=2
 * Purpose : assess sequencing quality before or after downstream processing
 */
 process QC_FASTQC {
-    label 'fastqc'
+    label 'maxforks_high', 'fastqc'
     publishDir "${params.result}/0_QC/${read_type}", mode: 'copy'
 
     input:
@@ -65,7 +65,7 @@ process QC_MULTIQC {
 * Purpose : remove low-quality reads and ensure high-confidence amplicon pairs
 */
 process TRIM_FASTP {
-    label 'fastp'
+    label 'maxforks_mid', 'mem_low', 'cpus_low', 'fastp'
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
@@ -104,7 +104,7 @@ process TRIM_FASTP {
 * Note    : pairing is preserved natively by BBMap (no manual reconstruction required)
 */
 process DECONTA_BBWRAP {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-2_Decontamination", mode: 'copy'
 
     input:
@@ -155,7 +155,7 @@ process DECONTA_BBWRAP {
 * Purpose : reduce dataset size for testing or resource optimization
 */
 process DOWNSAMPLE_BBTOOLS {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-3_Downsampled", mode: 'copy'
 
     input:
@@ -184,7 +184,7 @@ process DOWNSAMPLE_BBTOOLS {
 * Purpose : provide stats about downsampled data, and check if data not damaged
 */
 process QC_SEQKIT {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/0-3_Downsampled/QC", mode: 'copy'
 
     input:
@@ -220,7 +220,7 @@ process QC_SEQKIT {
 * Purpose : rapid k-mer based taxonomic assignment for quality control
 */
 process ASSIGN_KRAKEN2 {
-    label 'kraken2'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'kraken2'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -254,7 +254,7 @@ process ASSIGN_KRAKEN2 {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_MODIF {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -276,7 +276,7 @@ process MPA_MODIF {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_TO_KRONA {
-    label 'krona'
+    label 'maxforks_mid', 'cpus_mid', 'krona'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -298,7 +298,7 @@ process MPA_TO_KRONA {
 * Purpose : keep the information for plotting later
 */
 process COUNT_FASTQ_READS {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -324,7 +324,7 @@ process COUNT_FASTQ_READS {
 * Purpose : clean visualization of dominant bacterial families
 */
 process MPA_FAMILY_BARPLOT {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
         pattern: "*_familyBarplot.tsv"
@@ -360,7 +360,7 @@ process MPA_FAMILY_BARPLOT {
 * Purpose : compute sequence type (ST) and allele calls per sample_id from reads
 */
 process MLST_ELGATO {
-    label 'elgato'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
 
     publishDir "${params.result}/dev/2_ElGato", mode: 'copy',
         pattern: "*.csv"
@@ -404,7 +404,7 @@ process MLST_ELGATO {
 * Purpose : aggregate sequence type (ST) and allele calls across all sample_id
 */
 process MERGE_ELGATO {
-    label 'elgato'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
 
     publishDir "${params.result}", mode: 'copy',
         pattern: "*.csv"

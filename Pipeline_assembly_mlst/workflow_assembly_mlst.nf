@@ -74,15 +74,13 @@ include {
     MERGE_QC_QUAST
     MLST_MOMPS
     MERGE_MOMPS
-    STRAIN_FASTANI
-    MERGE_STRAIN_FASTANI
+    SPECIES_FASTANI
+    MERGE_SPECIES_FASTANI
     MLST_CHEWBBACA
     EXTRACT_ALLELES
     MERGE_EXTRACT_ALLELES
     CHEWBBACA_GRAPETREE
-    MERGE_REPORTREE_TSV
-    CHEWBBACA_REPORTREE
-    LP_MERGE_METADATA
+    MERGE_METADATA
     VISU_REPORTREE
     ASSEMBLY_MLST_SUMMARY_TABLE 
     ASSEMBLY_MLST_SUMMARY_HTML
@@ -118,6 +116,8 @@ include {
     IMPACT_SNPEFF as IMPACT_SNPEFF_AMR
     MERGE_IMPACT_SNPEFF as MERGE_IMPACT_SNPEFF_AMR
     PARSE_SNPEFF_GENES as PARSE_SNPEFF_GENES_AMR
+    CHEWBBACA_REFORMAT as CHEWBBACA_REFORMAT_GRAPETREE
+    MERGE_CHEWBBACA_TSV as MERGE_CHEWBBACA_TSV_GRAPETREE
 } from './modules/modules_assembly_mlst.nf'
 
 include { 
@@ -127,6 +127,8 @@ include {
     IMPACT_SNPEFF as IMPACT_SNPEFF_OTHER
     MERGE_IMPACT_SNPEFF as MERGE_IMPACT_SNPEFF_OTHER
     PARSE_SNPEFF_GENES as PARSE_SNPEFF_GENES_OTHER
+    CHEWBBACA_REFORMAT as CHEWBBACA_REFORMAT_REPORTREE
+    MERGE_CHEWBBACA_TSV as MERGE_CHEWBBACA_TSV_REPORTREE
 } from './modules/modules_assembly_mlst.nf'
 
 include { 
@@ -412,11 +414,7 @@ workflow {
         .collect()
     MERGE_ELGATO(mlst_elgato_ch, fastfinder_elgato_ch)
 
-    // GrapeTree only if > 2 samples == Lp
-    filtered_mlst_ch = MERGE_ELGATO.out.mlst.filter { tsv ->
-        tsv.text.readLines().size() > 3
-    }
-    LP_GRAPETREE_ELGATO("ElGato", filtered_mlst_ch)
+    LP_GRAPETREE_ELGATO("ElGato", MERGE_ELGATO.out.mlst)
 
     
     // ---------------------------
@@ -492,49 +490,46 @@ workflow {
     // ---------------------------
     // STRAIN IDENTIFICATION
     // ---------------------------
-    STRAIN_FASTANI(FILTER_CONTIGS.out)
+    SPECIES_FASTANI(FILTER_CONTIGS.out)
 
-    fastani_files_ch = STRAIN_FASTANI.out
+    fastani_files_ch = SPECIES_FASTANI.out
         .map { sample_id, tsv -> tsv }
         .collect()
-    MERGE_STRAIN_FASTANI(fastani_files_ch)
+    MERGE_SPECIES_FASTANI(fastani_files_ch)
 
-    // Get tuple [sample_id, tsv, strain, fastANI_value], 
+    // Get tuple [sample_id, tsv, species, fastANI_value], 
     // if fastANI_value >= params.fastani_min
-    strain_ch = STRAIN_FASTANI.out
+    species_ch = SPECIES_FASTANI.out
         .map { sample_id, tsv ->
             def cols = tsv.text.readLines()[0].split('\t')
 
-            def strain = cols[3].tokenize('/').last()
+            def species = cols[3].tokenize('/').last()
             def fastani = cols[4] as Double
 
-            tuple(
-                sample_id,
-                tsv,
-                strain,
-                fastani
-            )
+            tuple(sample_id, tsv, species, fastani)
         }
-        .filter { sample_id, tsv, strain, fastani ->
+        .filter { sample_id, tsv, species, fastani ->
             fastani >= params.fastani_min
         }
 
     // Get strain Lb or Lp + Join on sample_id with contig filt 
-    strain_contigs_ch = strain_ch
-        .map { sample_id, tsv, strain, fastani ->
-            def species =
-                strain?.contains("L_longbeachae") ? "Lb" :
-                strain?.contains("L_pneumophila") ? "Lp" :
+    strain_samples_ch = species_ch
+        .map { sample_id, tsv, species, fastani ->
+            def strain =
+                species?.contains("L_longbeachae") ? "Lb" :
+                species?.contains("L_pneumophila") ? "Lp" :
                 null
 
-            tuple(sample_id, species)
+            tuple(sample_id, strain)
         }
-        .filter { sample_id, species ->
-            species != null
+        .filter { sample_id, strain ->
+            strain != null
         }
+    
+    strain_contigs_ch = strain_samples_ch
         .join(FILTER_CONTIGS.out)
-        .map { sample_id, species, contig ->
-            tuple(species, contig)
+        .map { sample_id, strain, contig ->
+            tuple(strain, contig)
         }
         .groupTuple()
         .map { strain, contigs_files ->
@@ -592,32 +587,59 @@ workflow {
 
 
     // ---------------------------
-    // XXX TREE - cgMLST TREES
+    // cgMLST TREES - Inputs
     // ---------------------------
     // Two channels, 1 for GrapeTree / 1 for ReporTree
-    annotated_ch = all_mlst_ch.map { strain, nb, file ->
+    annotated_ch = all_mlst_ch.map { strain, nb, allele_tsv ->
         def cfg = treeCfg["${strain}:${nb}"] ?: [grapetree:false, reportree:false]
-        tuple(strain, nb, file, cfg.grapetree, cfg.reportree)
+        tuple(strain, nb, allele_tsv, cfg.grapetree, cfg.reportree)
     }
+
+    // Merge previous + new Metadata file for each Strain
+    strain_metadata_samples_ch = strain_samples_ch
+        .map { sample_id, strain ->
+            tuple(strain, sample_id)
+        }
+        .groupTuple()
+        .combine(LP_GRAPETREE_ELGATO.out.metadata)
+        .map { strain, samples_id, metadata_elgato ->
+            tuple(strain, metadata_elgato, samples_id)
+        }
+
+    MERGE_METADATA(strain_metadata_samples_ch)
 
     // ---------------------------
     // GrapeTree
     // ---------------------------
     grapetree_ch = annotated_ch
-        .filter { s, nb, f, g, r -> g }
-        .map { s, nb, f, g, r ->
-            tuple(s, nb, f)
+        .filter { strain, nb, allele_tsv, grapetree, reportree -> grapetree }
+        .map { strain, nb, allele_tsv, grapetree, reportree ->
+            tuple(strain, nb, allele_tsv)
         }
 
-    // Keep only files containing >= 2 samples
-    filtered_grapetree_ch = grapetree_ch
-        .filter { s, nb, f ->
-            def lines = f.text.readLines().findAll { it.trim() }
-
+    // Keep only files containing at least 1 sample
+    filtered_grapemerge_ch = grapetree_ch
+        .filter { strain, nb, allele_tsv ->
+            def lines = allele_tsv.text.readLines().findAll { it.trim() }
             def n_lines = lines.size()
             def n_cols = n_lines > 0 ? lines[0].split('\t', -1).size() : 0
 
-            n_lines > 3 && n_cols >= 2
+            n_lines > 1 && 
+            n_cols >= 2
+        }
+
+    CHEWBBACA_REFORMAT_GRAPETREE(filtered_grapemerge_ch)
+    MERGE_CHEWBBACA_TSV_GRAPETREE(CHEWBBACA_REFORMAT_GRAPETREE.out.mlst)
+
+    // GrapeTree only if at least 2 samples
+    filtered_grapetree_ch = grapetree_ch
+        .filter { strain, nb, allele_tsv ->
+            def lines = allele_tsv.text.readLines().findAll { it.trim() }
+            def n_lines = lines.size()
+            def n_cols = n_lines > 0 ? lines[0].split('\t', -1).size() : 0
+
+            n_lines > 2 && 
+            n_cols >= 2
         }
     CHEWBBACA_GRAPETREE(filtered_grapetree_ch)
 
@@ -625,53 +647,50 @@ workflow {
     // ReporTree
     // ---------------------------
     reportree_ch = annotated_ch
-        .filter { s, nb, f, g, r -> r }
-        .map { s, nb, f, g, r ->
-            tuple(s, nb, f)
+        .filter { strain, nb, allele_tsv, grapetree, reportree -> reportree }
+        .map { strain, nb, allele_tsv, grapetree, reportree ->
+            tuple(strain, nb, allele_tsv)
         }
 
-    // ReporTree only on valid input files (no .extract.tsv)
+    // ReporTree only on valid input files (no .extract.tsv, at least 1 sample)
     filtered_chewbbaca_ch = reportree_ch
-        .filter { s, nb, f ->
-            def lines = f.text.readLines().findAll { it.trim() }
+        .filter { strain, nb, allele_tsv ->
+            def lines = allele_tsv.text.readLines().findAll { it.trim() }
             def n_lines = lines.size()
             def n_cols = n_lines > 0 ? lines[0].split('\t', -1).size() : 0
 
-            !f.name.endsWith(".extract.tsv") &&
-            n_cols >= 2
+            !allele_tsv.name.endsWith(".extract.tsv") &&
+            n_cols >= 2 &&
+            n_lines > 1
         }
-    CHEWBBACA_REPORTREE(filtered_chewbbaca_ch)
+    CHEWBBACA_REFORMAT_REPORTREE(filtered_chewbbaca_ch)
+    MERGE_CHEWBBACA_TSV_REPORTREE(CHEWBBACA_REFORMAT_REPORTREE.out.mlst)
 
-    // ReporTree only if > 2 samples
-    filtered_mergedchewbbaca_ch = CHEWBBACA_REPORTREE.out.mlst
-        .filter { s, nb, f ->
-            def lines = f.text.readLines().findAll { it.trim() }
-            def n_lines = lines.size()
-            n_lines > 3
-        }
-
-    MERGE_REPORTREE_TSV(filtered_mergedchewbbaca_ch)
-
-    LP_MERGE_METADATA(LP_GRAPETREE_ELGATO.out.metadata)
-
-    // Add cgMLST reference schema
+    // Get cgMLST reference schema
     def lp_lit_map = params.lp_set.collectEntries { cfg ->
         [(cfg.nb): cfg.lit]
     }
-    filtered_reportree_ch = MERGE_REPORTREE_TSV.out.mlst
-        .map { strain, nb, allele_tsv ->
-            def lit = lp_lit_map[nb]
-            return tuple(strain, nb, allele_tsv, lit)
-        }
 
-    VISU_REPORTREE(filtered_reportree_ch, LP_MERGE_METADATA.out)
+    // ReporTree only if at least 2 samples
+    filtered_reportree_ch = MERGE_CHEWBBACA_TSV_REPORTREE.out.mlst
+        .filter { strain, nb, allele_tsv ->
+            def n_lines = allele_tsv.text.readLines().count { it.trim() }
+            n_lines > 2
+        }
+        .join(MERGE_METADATA.out, by: 0)
+        .map { strain, nb, allele_tsv, metadata ->
+            def lit = lp_lit_map[nb]
+            tuple(strain, nb, allele_tsv, lit, metadata)
+        }
+    
+    VISU_REPORTREE(filtered_reportree_ch)
         
 
     // ---------------------------
     // SUMMARY - .tsv and .html
     // ---------------------------
     summary_ch = MERGE_RATIO_KRAKEN2.out
-        .mix(MERGE_STRAIN_FASTANI.out)
+        .mix(MERGE_SPECIES_FASTANI.out)
         .mix(MERGE_ELGATO.out.mlst)
         .mix(MERGE_EXTRACT_ALLELES.out)
         .mix(MERGE_QC_QUAST.out)

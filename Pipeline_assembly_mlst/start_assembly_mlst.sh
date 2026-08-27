@@ -109,7 +109,7 @@ momps="false"
 snpeff_other="false"
 zoom="none"
 metadata_user_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_"
-partition_folder="/srv/scratch/iai/bachcl/db/legio/ReporTree"
+partition_folder="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_Database/ReporTree"
 analyse_id=$(date +%Y%m%d)
 
 ## User values
@@ -265,6 +265,13 @@ tmp_folder="${tmp_folder_prefix}/${sequencing_id}"
 work_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Assembly-MLST/work"
 result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Assembly-MLST"
 
+## Input folder content check
+if [[ ! -d "${input_folder}" ]] || \
+   ! find "${input_folder}" -maxdepth 1 -type f \( -name "*.fastq" -o -name "*.fastq.gz" \) -print -quit | grep -q .; then
+    echo "ERROR: No FASTQ or FASTQ.GZ files found in ${input_folder}" >&2
+    echo "     Please verify the path and consider re-downloading the data." >&2
+    exit 1
+fi
 
 ## Metadata file content check
 if [[ -z "${metadata_user}" ]]; then
@@ -284,7 +291,7 @@ header=$(head -n1 "${metadata_user}")
 }
 
 ### Check columns needed
-for col in ID Year Origin Linked_to; do
+for col in ID Year Origin; do
     grep -qw "${col}" <<< "$(tr '\t' '\n' <<< "${header}")" || {
         echo "ERROR: Missing column '${col}' in ${metadata_user}" >&2
         exit 1
@@ -394,24 +401,21 @@ rsync -avQ \
 echo ""
 ### Synchronising every files/folders, dev and work not needed
 
-## Replace old partitions.tsv and alleles.tsv by new ones
+## Backup and replace changed files only (ReporTree DB)
 timestamp=$(date +"%Y%m%d-%H%M")
 shopt -s nullglob
-copy=false
-for src in "${result_folder}"/dev/Rsync/*genes_*.tsv; do
+for src in "${result_folder}"/dev/Rsync/*.tsv; do
     [[ -s "${src}" ]] || continue
     dst="${partition_folder}/$(basename "${src}")"
 
-    ### Copy if destination is missing or content differs
-    [[ ! -f "${dst}" || ! cmp -s "${src}" "${dst}" ]] || continue
+    [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
 
-    if ! ${copy}; then
+    if [[ -f "${dst}" ]]; then
         mkdir -p "${partition_folder}/OLD/${timestamp}"
-        mv "${partition_folder}"/*genes_*.tsv "${partition_folder}/OLD/${timestamp}/" 2>/dev/null
-        copy=true
+        mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
     fi
 
-    cp "${src}" "${partition_folder}/"
+    cp "${src}" "${dst}"
 done
 echo ""
 

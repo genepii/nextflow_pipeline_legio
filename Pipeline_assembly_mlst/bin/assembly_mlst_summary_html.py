@@ -74,6 +74,27 @@ COLUMN_DESC = {
     "XX_Nb_Non_Coding": "Number of non-coding XX-related variants"
 }
 
+# Values = missing value
+MISSING_VALUES = [
+    "",
+    "nan",
+    "NaN",
+    "NA",
+    "Na",
+    "N/A",
+    "<NA>",
+    "null",
+    "NULL",
+    "Null",
+]
+
+# Columns containing float values
+FLOAT_COLUMNS = [
+    "Depth",
+    "GC",
+    "FastANI_value",
+    "auN",
+]
 
 def parse_args():
     """Parse command line arguments"""
@@ -116,17 +137,7 @@ def main():
         )
         amr_df = amr_df[
             ~amr_tmp.replace(
-                [
-                    "nan",
-                    "NaN",
-                    "NA",
-                    "Na",
-                    "N/A",
-                    "<NA>",
-                    "null",
-                    "NULL",
-                    ""
-                ],
+                MISSING_VALUES,
                 pd.NA
             )
             .isna()
@@ -150,17 +161,7 @@ def main():
         )
         other_df = other_df[
             ~other_tmp.replace(
-                [
-                    "nan",
-                    "NaN",
-                    "NA",
-                    "Na",
-                    "N/A",
-                    "<NA>",
-                    "null",
-                    "NULL",
-                    ""
-                ],
+                MISSING_VALUES,
                 pd.NA
             )
             .isna()
@@ -220,10 +221,11 @@ h2{
     margin-top: 4px;
     margin-bottom: 4px;
     padding-left: calc(48px - 15px);
+    color: white;
 }
 
-.report-subtitle a{
-    color: white;
+a{
+    color: inherit;
     text-decoration: underline;
 }
 
@@ -236,20 +238,31 @@ h2{
 
 .info-block a{
     font-weight: bold;
-    text-decoration: underline;
+    color: blue;
 }
 
 .section{
     margin-top: 40px;
 }
 
+.table-content{
+    margin:10px 43px 0 43px;
+}
+
 .table-wrapper{
     width: calc(100% - 174px);
     margin-left: 87px;
     margin-right: 87px;
+    max-height: 600px;
+}
+
+.table-controls {
+    width: 100%;
+}
+
+.table-scroll {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 600px;
 }
 
 table{
@@ -266,7 +279,7 @@ th,td{
 
 .table-description{
     width:calc(100% - 174px);
-    margin:10px 48px 0 48px;
+    margin:10px 87px 0 87px;
     font-size:13px;
     color:#555;
     line-height:1.45;
@@ -299,14 +312,84 @@ hr{
 .hidden{
     display:none;
 }
+
+#settings {
+    margin-left: 87px;
+}
+
+button {
+    color: white;
+    background-color: #4d4d4d;
+    font-weight: 500;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 20px;
+    width: 60px;
+    height: 26px;
+    padding: 3px 10px;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+}
+
+button:hover {
+    background-color: #616161;
+}
+
+button.copy-button {
+    position: relative;
+    left: -44px;
+}
+
+button.show-button {
+    margin-left: 43px;
+}
 </style>
 
 <script>
-function toggleSettings(){
-    document
-        .getElementById("settings")
-        .classList
-        .toggle("hidden");
+function toggleSettings(button) {
+    const settings = document.getElementById("settings");
+
+    settings.classList.toggle("hidden");
+
+    button.innerText = settings.classList.contains("hidden")
+        ? "Show"
+        : "Hide";
+}
+
+async function copyTable(button) {
+    const wrapper = button.closest(".table-wrapper");
+    const table = wrapper?.querySelector("table");
+
+    if (!table) {
+        console.error("Table not found.");
+        return;
+    }
+
+    const text = Array.from(table.rows)
+        .map(row =>
+            Array.from(row.cells)
+                .map(cell => cell.innerText.trim())
+                .join("\t")
+        )
+        .join("\n");
+
+    try {
+        await navigator.clipboard.writeText(text);
+
+        const originalText = button.innerText;
+        button.innerText = "Copied";
+
+        setTimeout(() => {
+            button.innerText = originalText;
+        }, 1500);
+    } catch (error) {
+        console.error("Failed to copy table:", error);
+    }
 }
 </script>
 
@@ -353,12 +436,13 @@ AMR variants detected : <a href="#AMR" style="color:white;">see table</a>
 
 <h2>Table of Contents</h2>
 
+<div class="table-content">
 <ol>
 <li><a href="#Quality"><b>Quality indicators</b></a></li>
 <li><a href="#Desc"><b>Column descriptions</b></a></li>
 
 <li>
-Assembly &amp; MLST Summary
+<a href="#Mlst"><b>Assembly &amp; MLST Summary</b></a>
     <ul>
     {% for s in strains %}
         <li>
@@ -374,6 +458,8 @@ Assembly &amp; MLST Summary
 <li><a href="#OTHER"><b>Other Summary</b></a></li>
 <li><a href="#Settings"><b>Settings</b></a></li>
 </ol>
+
+</div>
 
 <hr>
 
@@ -418,6 +504,7 @@ These highlights are intended as visual quality-control indicators and should be
 
 <hr>
 
+<div id="Mlst">
 <h2>Assembly &amp; MLST Summary</h2>
 
 {% for s in strains %}
@@ -426,6 +513,12 @@ These highlights are intended as visual quality-control indicators and should be
 <h3><i>{{ s.replace("_", " ") }}</i></h3>
 
 <div class="table-wrapper">
+
+<div class="table-controls">
+<button class="copy-button" onclick="copyTable(this)">Copy</button>
+</div>
+
+<div class="table-scroll">
 <table>
 
 <tr>
@@ -440,8 +533,7 @@ These highlights are intended as visual quality-control indicators and should be
 <td>
 
 {% set value = row[col] if col in row else "" %}
-{% set num = value|float if value not in ["", "nan", "NaN", None, "NA", "Na", "Null"] else None %}
-{% set float_columns = ["Depth", "GC", "FastANI_value", "auN"] %}
+{% set num = value|float if value not in missing_value else None %}
 
 {% if col in ["Legionella_pneumophila_percent", "Legionella_spp_percent"] and num is not none %}
     {% set display_value = "%.2f"|format(num * 100) %}
@@ -451,7 +543,7 @@ These highlights are intended as visual quality-control indicators and should be
     {% set display_value = value %}
 {% endif %}
 
-{% if value in ["", "nan", "NaN", None, "NA", "Na", "Null"] %}
+{% if value in missing_value %}
     <span style="color:#e5e5e5;">{{ display_value }}</span>
 
 {% elif value == "Contamination" %}
@@ -483,10 +575,13 @@ These highlights are intended as visual quality-control indicators and should be
 
 </table>
 </div>
+</div>
 
 </div>
 
 {% endfor %}
+
+</div>
 
 <hr>
 
@@ -495,6 +590,12 @@ These highlights are intended as visual quality-control indicators and should be
 <h2>AMR Summary</h2>
 
 <div class="table-wrapper">
+
+<div class="table-controls">
+<button class="copy-button" onclick="copyTable(this)">Copy</button>
+</div>
+
+<div class="table-scroll">
 <table>
 
 <tr>
@@ -522,6 +623,7 @@ class="amr-alert"
 
 </table>
 </div>
+</div>
 
 </div>
 
@@ -534,6 +636,12 @@ class="amr-alert"
 <h2>Other Summary</h2>
 
 <div class="table-wrapper">
+
+<div class="table-controls">
+<button class="copy-button" onclick="copyTable(this)">Copy</button>
+</div>
+
+<div class="table-scroll">
 <table>
 
 <tr>
@@ -562,6 +670,7 @@ class="amr-alert"
 
 </table>
 </div>
+</div>
 
 </div>
 
@@ -573,7 +682,7 @@ class="amr-alert"
 
 <h2>Settings - Traceability of software and parameters</h2>
 
-<button onclick="toggleSettings()">Show</button>
+<button class="show-button" onclick="toggleSettings(this)">Show</button>
 
 <pre id="settings" class="hidden">{{ software_text }}</pre>
 
@@ -599,6 +708,8 @@ class="amr-alert"
         column_desc=COLUMN_DESC,
         amr_columns=AMR_COLUMNS,
         other_columns=OTHER_COLUMNS,
+        float_columns=FLOAT_COLUMNS,
+        missing_value=MISSING_VALUES,
         software_text=software_text,
         amr_warning=amr_warning(df)
     )

@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-- Removed reference genomes corresponding to species that have since been reclassified as existing *Legionella* species::
+- Removed reference genomes corresponding to species that have since been reclassified as existing *Legionella* species:
     - `L_crisitniensis_S60`
     - `L_cristiniensis_31fI33`
 

@@ -10,7 +10,7 @@ Rules implemented:
 - Missing values are filled with 0.
 - If the same ID exists in both files:
     - If the profiles are identical, only one row is kept.
-    - If the profiles are different, only the row from --tsv is kept.
+    - If the profiles are different, only the row from --new-tsv is kept.
 - Rows with IDs present in only one file are kept.
 - Duplicate rows are removed.
 - Warning file is always created:
@@ -33,8 +33,8 @@ def main():
         description="Merge two TSV files keeping all columns."
     )
 
-    parser.add_argument("--tsv-user", required=True)
-    parser.add_argument("--tsv", required=True)
+    parser.add_argument("--old-tsv", required=True)
+    parser.add_argument("--new-tsv", required=True)
     parser.add_argument("--output-name", required=True)
     parser.add_argument("--warning", required=True)
 
@@ -44,14 +44,14 @@ def main():
     # Load TSV files
     # -------------------------
     df_user = pd.read_csv(
-        args.tsv_user,
+        args.old_tsv,
         sep="\t",
         dtype=str,
         keep_default_na=False,
     ).replace("", "0")
 
     df_new = pd.read_csv(
-        args.tsv,
+        args.new_tsv,
         sep="\t",
         dtype=str,
         keep_default_na=False,
@@ -94,7 +94,7 @@ def main():
             warnings.append(
                 {
                     "Header": col,
-                    "Absent_in": args.tsv,
+                    "Absent_in": args.new_tsv,
                 }
             )
 
@@ -104,7 +104,7 @@ def main():
             warnings.append(
                 {
                     "Header": col,
-                    "Absent_in": args.tsv_user,
+                    "Absent_in": args.old_tsv,
                 }
             )
 
@@ -128,8 +128,8 @@ def main():
 
     # -------------------------
     # Build the complete column union
-    # Keep the order from --tsv-user first,
-    # then append columns only present in --tsv.
+    # Keep the order from --old-tsv first,
+    # then append columns only present in --new-tsv.
     # -------------------------
     all_cols = list(dict.fromkeys(cols_user + cols_new))
 
@@ -158,8 +158,8 @@ def main():
     #
     # For a shared ID:
     # - If profiles are identical, keep the row once.
-    # - If profiles differ, discard the --tsv-user row
-    #   and keep only the --tsv row.
+    # - If profiles differ, discard the --old-tsv row
+    #   and keep only the --new-tsv row.
     #
     # The comparison is performed on all non-ID columns
     # after harmonizing both files to the same schema.
@@ -168,7 +168,7 @@ def main():
 
     if shared_ids:
         # Keep IDs that are present in both files out of the
-        # user dataset. The corresponding row from --tsv will
+        # user dataset. The corresponding row from --new-tsv will
         # always be retained below.
         df_user = df_user[
             ~df_user["ID"].isin(shared_ids)
@@ -178,7 +178,7 @@ def main():
     # Merge datasets
     #
     # IDs shared by both files are now represented only by
-    # their row from --tsv.
+    # their row from --new-tsv.
     # IDs present in only one file are retained.
     # -------------------------
     merged = pd.concat(

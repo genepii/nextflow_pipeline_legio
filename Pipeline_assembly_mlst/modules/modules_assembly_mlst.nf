@@ -12,7 +12,7 @@ nextflow.enable.dsl=2
 * Purpose : assess sequencing quality before or after downstream processing
 */
 process QC_FASTQC {
-    label 'fastqc'
+    label 'maxforks_high', 'fastqc'
     publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
 
     input:
@@ -69,7 +69,7 @@ process QC_MULTIQC {
 * Purpose : adapter trimming + quality filtering + length filtering
 */
 process TRIM_FASTP {
-    label 'fastp'
+    label 'maxforks_mid', 'mem_low', 'cpus_low', 'fastp'
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
@@ -111,7 +111,7 @@ process TRIM_FASTP {
 * Note    : pairing is preserved natively by BBMap (no manual reconstruction required)
 */
 process DECONTA_BBWRAP {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-2_Decontamination", mode: 'copy'
 
     input:
@@ -162,7 +162,7 @@ process DECONTA_BBWRAP {
 * Purpose : reduce dataset size for testing or resource optimization
 */
 process DOWNSAMPLE_BBTOOLS {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-3_Downsampled", mode: 'copy'
 
     input:
@@ -191,7 +191,7 @@ process DOWNSAMPLE_BBTOOLS {
 * Purpose : provide stats about downsampled data, and check if data not damaged
 */
 process QC_SEQKIT {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/0-3_Downsampled/QC", mode: 'copy'
 
     input:
@@ -203,8 +203,6 @@ process QC_SEQKIT {
 
     script:
     """
-    #!/usr/bin/env bash
-
     seqkit stats -Ta \
         "${r1}" \
         "${r2}" \
@@ -227,7 +225,7 @@ process QC_SEQKIT {
 * Purpose : rapid k-mer based taxonomic assignment for quality control
 */
 process ASSIGN_KRAKEN2 {
-    label 'kraken2'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'kraken2'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -261,7 +259,7 @@ process ASSIGN_KRAKEN2 {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_MODIF {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -283,7 +281,7 @@ process MPA_MODIF {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_TO_KRONA {
-    label 'krona'
+    label 'maxforks_mid', 'cpus_mid', 'krona'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -305,7 +303,7 @@ process MPA_TO_KRONA {
 * Purpose : keep the information for plotting later
 */
 process COUNT_FASTQ_READS {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -334,7 +332,7 @@ process COUNT_FASTQ_READS {
 * Purpose : aggregate sequencing depth information for downstream QC/plots
 */
 process MERGE_TOTAL_BASES {
-    label 'bash'
+    label 'python'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
 
     input:
@@ -363,7 +361,7 @@ process MERGE_TOTAL_BASES {
 * Purpose : clean visualisation of dominant bacterial families
 */
 process MPA_FAMILY_BARPLOT {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
         pattern: "*_familyBarplot.tsv"
@@ -397,7 +395,7 @@ process MPA_FAMILY_BARPLOT {
 * Purpose : fast check if strain of interest or Legio in samples
 */
 process RATIO_KRAKEN2 {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -429,7 +427,7 @@ process RATIO_KRAKEN2 {
 * Purpose : create only one table with every samples
 */
 process MERGE_RATIO_KRAKEN2 {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
 
     input:
@@ -457,7 +455,7 @@ process MERGE_RATIO_KRAKEN2 {
 * Purpose : compute sequence type (ST) and allele calls per sample_id from reads
 */
 process MLST_ELGATO {
-    label 'elgato'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
 
     publishDir "${params.result}/dev/2_ElGato", mode: 'copy',
         pattern: "*.csv"
@@ -501,7 +499,7 @@ process MLST_ELGATO {
 * Purpose : aggregate sequence type (ST) and allele calls across all sample_id
 */
 process MERGE_ELGATO {
-    label 'elgato'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
 
     publishDir "${params.result}/dev/Summary", mode: 'copy',
         pattern: "*.tsv"
@@ -566,7 +564,7 @@ process CLEAN_REFERENCE_FASTA {
 * Purpose : enable fast random access to reference sequences for bcftools and alignment tools
 */
 process INDEX_REFERENCE_FASTA {
-    label 'samtools'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'samtools'
 
     input:
         path(ref_file)
@@ -587,7 +585,7 @@ process INDEX_REFERENCE_FASTA {
 * Purpose : generate read alignments against reference for downstream BAM conversion and variant calling
 */
 process ALIGN_MINIMAP2 {
-    label 'minimap2'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'minimap2'
     // no PublishDir for .sam
 
     input:
@@ -635,7 +633,7 @@ process ALIGN_MINIMAP2 {
 * Purpose : prepare aligned reads in indexed binary format for efficient variant calling
 */
 process TO_BAM_SAMTOOLS {
-    label 'samtools'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'samtools'
     publishDir "${params.result}/dev/3_AMR", mode: 'copy'
 
     input:
@@ -660,7 +658,7 @@ process TO_BAM_SAMTOOLS {
 * Purpose : detect SNPs and small variants using haplotype-based Bayesian variant calling
 */
 process VARCALL_FREEBAYES {
-    label 'freebayes'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'freebayes'
     publishDir "${params.result}/dev/3_AMR", mode: 'copy'
 
     input:
@@ -702,7 +700,7 @@ process VARCALL_FREEBAYES {
 * Purpose : remove low-quality variants before normalization
 */
 process FILTER_BCFTOOLS {
-    label 'bcftools'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'bcftools'
     publishDir "${params.result}/dev/3_AMR", mode: 'copy'
 
     input:
@@ -730,7 +728,7 @@ process FILTER_BCFTOOLS {
 * Purpose : ensure canonical variant representation for downstream AMR analysis
 */
 process NORM_BCFTOOLS {
-    label 'bcftools'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'bcftools'
     publishDir "${params.result}/dev/3_AMR", mode: 'copy'
 
     input:
@@ -757,7 +755,7 @@ process NORM_BCFTOOLS {
 * Purpose : generate per-gene mutation impact statistics for downstream AMR analysis
 */
 process IMPACT_SNPEFF {
-    label 'snpeff'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'snpeff'
 
     publishDir { type == 'AMR'
         ? "${params.result}/3_AMR"
@@ -802,7 +800,7 @@ process IMPACT_SNPEFF {
 * Purpose : aggregate per-sample mutation impacts at gene level
 */
 process MERGE_IMPACT_SNPEFF {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
 
     input:
@@ -833,7 +831,7 @@ process MERGE_IMPACT_SNPEFF {
 * Purpose : generate structured AMR-ready mutation tables for downstream analyses
 */
 process PARSE_SNPEFF_GENES {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir { type == 'AMR'
         ? "${params.result}/3_AMR"
@@ -864,7 +862,7 @@ process PARSE_SNPEFF_GENES {
 * Purpose : generate high-quality bacterial genome assemblies (careful mode, auto coverage cutoff)
 */
 process ASSEMBLY_SPADES {
-    label 'spades'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'spades'
     publishDir "${params.result}/dev/4_SPAdes", mode: 'copy'
 
     input:
@@ -902,7 +900,7 @@ process ASSEMBLY_SPADES {
 * Purpose: remove short contigs for downstream QC and analysis
 */
 process FILTER_CONTIGS {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/4_SPAdes/${sample_id}", mode: 'copy'
 
     input:
@@ -927,7 +925,7 @@ process FILTER_CONTIGS {
 * Purpose : assess assembly quality metrics (N50, GC%, contigs count, etc.)
 */
 process QC_QUAST {
-    label 'quast'
+    label 'maxforks_high', 'mem_low', 'quast'
     publishDir "${params.result}/4_SPAdes", mode: 'copy'
 
     input:
@@ -960,7 +958,7 @@ process QC_QUAST {
 * Purpose : consolidate assembly metrics per sample
 */
 process MERGE_QC_QUAST {
-    label 'quast'
+    label 'maxforks_high', 'mem_low', 'quast'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
 
     input:
@@ -997,7 +995,7 @@ process MERGE_QC_QUAST {
 * Purpose : standardized Legionella typing workflow
 */
 process MLST_MOMPS {
-    label 'momps'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'momps'
 
     publishDir "${params.result}/dev/Summary", mode: 'copy',
         pattern: "*.tsv"
@@ -1052,7 +1050,7 @@ process MLST_MOMPS {
 * Purpose : aggregate sequence type (ST) and allele calls across all sample_id
 */
 process MERGE_MOMPS {
-    label 'momps'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'momps'
     publishDir "${params.result}", mode: 'copy'
 
     input:
@@ -1085,8 +1083,8 @@ process MERGE_MOMPS {
 * Output  : fastANI similarity report
 * Purpose : estimate ANI against a reference genome collection for strain identification
 */
-process STRAIN_FASTANI {
-    label 'fastani'
+process SPECIES_FASTANI {
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'fastani'
     publishDir "${params.result}/6_fastANI", mode: 'copy'
 
     input:
@@ -1116,8 +1114,8 @@ process STRAIN_FASTANI {
 * Output  : consolidated summary table (Sample_ID, FastANI_strain, FastANI_value)
 * Purpose : extract best ANI hit per sample
 */
-process MERGE_STRAIN_FASTANI {
-    label 'fastani'
+process MERGE_SPECIES_FASTANI {
+    label 'mem_mid', 'fastani'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
 
     input:
@@ -1160,7 +1158,7 @@ process MERGE_STRAIN_FASTANI {
 * Purpose : run chewBBACA AlleleCall per strain group
 */
 process MLST_CHEWBBACA {
-    label 'chewbbaca'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'chewbbaca'
 
     publishDir "${params.result}/7_chewBBACA", mode: 'copy',
         pattern: "*genes.tsv"
@@ -1217,7 +1215,7 @@ process MLST_CHEWBBACA {
 * Purpose : extract params.alleles_set
 */
 process EXTRACT_ALLELES {
-    label 'chewbbaca'
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'chewbbaca'
     publishDir "${params.result}/7_chewBBACA/Target_genes", mode: 'copy'
     
     input:
@@ -1249,7 +1247,7 @@ process EXTRACT_ALLELES {
 * Purpose : build a complete presence/absence allele matrix
 */
 process MERGE_EXTRACT_ALLELES {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/Summary", mode: 'copy'
     
     input:
@@ -1278,8 +1276,8 @@ process MERGE_EXTRACT_ALLELES {
 * Purpose : QC chewBBACA alleles results
 */
 process CHEWBBACA_GRAPETREE {
-    label 'grapetree'
-    publishDir "${params.result}/8_Clustering/${strain}-${nb}genes_GrapeTree", mode: 'copy'
+    label 'maxforks_high', 'mem_low', 'grapetree'
+    publishDir "${params.result}/8_Clustering/${strain}_${nb}genes_GrapeTree", mode: 'copy'
 
     input:
         tuple val(strain),
@@ -1323,7 +1321,7 @@ process CHEWBBACA_GRAPETREE {
 * Purpose : QC results
 */
 process LP_GRAPETREE {
-    label 'grapetree'
+    label 'maxforks_high', 'mem_low', 'grapetree'
     publishDir "${params.result}/8_Clustering/${software}_GrapeTree", mode: 'copy'
 
     input:
@@ -1362,17 +1360,17 @@ process LP_GRAPETREE {
 }
 
 /*
-* Merge user and generated ReporTree MLST allele tables.
-* Input   : generated MLST allele TSV
-* Output  : merged MLST allele TSV + warning report
-* Purpose : retain only shared columns and combine MLST allele for ReporTree
+* Merge user and generated ReporTree MLST alleles tables.
+* Input   : generated MLST alleles TSV
+* Output  : merged MLST alleles TSV + warning report
+* Purpose : retain only shared columns and combine MLST alleles
 */
-process MERGE_REPORTREE_TSV {
-    label 'python'
+process MERGE_CHEWBBACA_TSV {
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir "${params.result}/dev/Rsync", mode: 'copy',
         pattern: "*genes_MLSTchewbbaca.tsv"
-    publishDir "${params.result}/dev/9_ReporTree", mode: 'copy',
+    publishDir "${params.result}/dev/7_chewBBACA", mode: 'copy',
         pattern: "*.*.tsv"
 
     input:
@@ -1394,8 +1392,8 @@ process MERGE_REPORTREE_TSV {
 
     if [ -f "\${previous_MLST}" ]; then
         assembly_mlst_merge_mlst_tsv.py \
-            --tsv-user \${previous_MLST} \
-            --tsv ${allele_tsv} \
+            --old-tsv \${previous_MLST} \
+            --new-tsv ${allele_tsv} \
             --output-name "${strain}_${nb}genes_MLST.merged.tsv" \
             --warning "${strain}_${nb}genes_MLST.warning.tsv"
     else
@@ -1414,9 +1412,9 @@ process MERGE_REPORTREE_TSV {
 * Purpose : MLST newick tree and strain clustering
 */
 // WARNING : col1 of ${allele_tsv} must be in the same order as col1 of cgMLST0.tsv 
-process CHEWBBACA_REPORTREE {
-    label 'chewbbaca'
-    publishDir "${params.result}/dev/9_ReporTree", mode: 'copy'
+process CHEWBBACA_REFORMAT {
+    label 'maxforks_low', 'mem_mid', 'cpus_mid', 'chewbbaca'
+    publishDir "${params.result}/dev/7_chewBBACA", mode: 'copy'
 
     input:
         tuple val(strain),
@@ -1449,38 +1447,56 @@ process CHEWBBACA_REPORTREE {
 }
 
 /*
-* Merge Elgato and user metadata
-* Input   : Elgato metadata TSV + user metadata TSV
+* Merge previous metadata and/or Elgato with user metadata
+* Input   : strain, Elgato metadata TSV, and sample ID list
 * Output  : Merged metadata TSV
-* Purpose : Keep ID and ST from Elgato, rename Sample_ID to ID, and append matching user metadata
+* Purpose : Filter by sample IDs, add Elgato ST for Lp, merge with previous
 */
-process LP_MERGE_METADATA {
-    label 'python'
-    publishDir "${params.result}/dev/9_ReporTree", mode: 'copy'
+process MERGE_METADATA {
+    label 'maxforks_mid', 'cpus_mid', 'python'
+    publishDir "${params.result}/dev/Rsync", mode: 'copy'
 
     input:
-        path(metadata_elgato)
+        tuple val(strain), 
+            path(metadata_elgato), 
+            val(samples_list)
 
     output:
-        path("Metadata_${params.suffix}.merged.tsv")
+        tuple val(strain), 
+            path("${strain}_MLSTmetadata.tsv")
 
     script:
+    def list_modified = samples_list.collect { "'${it}'" }.join(', ')
+
     """
     python3 << 'EOF'
+    import os
     import pandas as pd
 
-    elgato = pd.read_csv("${metadata_elgato}", sep="\\t", dtype=str).fillna("NA")
+    samples = [${list_modified}]
+
     user = pd.read_csv("${params.rep_metadata}", sep="\\t", dtype=str).fillna("NA")
+    user = user[user.ID.isin(samples)]
 
-    elgato = elgato[["Sample_ID", "ST"]].rename(columns={"Sample_ID": "ID"})
+    if "${strain}" == "Lp":
+        elgato = pd.read_csv("${metadata_elgato}", sep="\\t", dtype=str)
+        elgato = elgato[["Sample_ID", "ST"]].rename(columns={"Sample_ID": "ID"})
+        metadata = elgato.merge(user, on="ID", how="left").fillna("NA")
+    else:
+        metadata = user
 
-    merged = elgato.merge(user, on="ID", how="left").fillna("NA")
+    previous = "${params.rep_partition}/${strain}_MLSTmetadata.tsv"
+    if os.path.exists(previous):
+        old = pd.read_csv(previous, sep="\\t", dtype=str).fillna("NA")
+        metadata = pd.concat([old, metadata]).drop_duplicates("ID", keep="last")
 
-    merged.to_csv(
-        "Metadata_${params.suffix}.merged.tsv",
-        sep="\\t",
-        index=False
-    )
+    if "ST" not in metadata.columns:
+        metadata.insert(1, "ST", "NA")
+
+    metadata = metadata[["ID"] + [c for c in metadata.columns if c != "ID"]]
+
+    metadata = metadata.fillna("NA")
+    metadata.to_csv("${strain}_MLSTmetadata.tsv", sep="\\t", index=False)
     EOF
     """
 }
@@ -1492,7 +1508,7 @@ process LP_MERGE_METADATA {
 * Purpose : MLST newick tree and strain clustering
 */
 process VISU_REPORTREE {
-    label 'reportree'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'reportree'
 
     publishDir "${params.result}/dev/Rsync", mode: 'copy',
         pattern: "*_*genes_partitions.tsv"
@@ -1503,8 +1519,8 @@ process VISU_REPORTREE {
         tuple val(strain),
             val(nb),
             path(allele_tsv),
-            path(cgmlst_ref)
-        path(metadata_tsv)
+            path(cgmlst_ref),
+            path(metadata_tsv)
 
     output:
         path("${strain}_${nb}genes_ReporTree/*"), emit: folder
@@ -1530,7 +1546,7 @@ process VISU_REPORTREE {
             zoom_opts=""
             ;;
         analyse)
-            sample_list=\$(tail -n +2 ${metadata_tsv} | cut -f1 | paste -sd "," -)
+            sample_list=\$(tail -n +2 ${params.rep_metadata} | cut -f1 | paste -sd "," -)
             if [ -n "\${sample_list}" ]; then
                 zoom_opts="--sample_of_interest \${sample_list} --zoom-cluster-of-interest ${params.rep_interest} --site-inclusion ${params.rep_site_inclusion}"
             else
@@ -1565,7 +1581,7 @@ process VISU_REPORTREE {
         --loci-called ${params.rep_loci_called} \
         --analysis ${params.rep_analysis} \
         --method ${params.rep_model} \
-        --columns_summary_report "ST,Year,Origin,Linked_to" \
+        --columns_summary_report ${params.rep_col_report} \
         --partitions2report 'all' \
         --metadata2report ${params.rep_col_metadata} \
         \$nomenclature_opts \
@@ -1586,7 +1602,7 @@ process VISU_REPORTREE {
 * Purpose : aggregate heterogeneous results, 1 row per sample, using NA for missing data
 */
 process ASSEMBLY_MLST_SUMMARY_TABLE  {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}", mode: 'copy'
 
     input:
@@ -1610,7 +1626,7 @@ process ASSEMBLY_MLST_SUMMARY_TABLE  {
 * Purpose : generate human-readable interactive report for QC / MLST / AMR overview
 */
 process ASSEMBLY_MLST_SUMMARY_HTML  {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}", mode: 'copy'
 
     input:

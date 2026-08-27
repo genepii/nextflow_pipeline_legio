@@ -12,7 +12,7 @@ nextflow.enable.dsl=2
 * Purpose : assess sequencing quality before or after downstream processing
 */
 process QC_FASTQC {
-    label 'fastqc'
+    label 'maxforks_high', 'fastqc'
     publishDir "${params.result}/0_QC/${read_type}", mode: 'copy'
 
     input:
@@ -65,7 +65,7 @@ process QC_MULTIQC {
 * Purpose : remove low-quality reads and ensure high-confidence amplicon pairs
 */
 process TRIM_FASTP {
-    label 'fastp'
+    label 'maxforks_mid', 'mem_low', 'cpus_low', 'fastp'
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
@@ -104,7 +104,7 @@ process TRIM_FASTP {
 * Note    : pairing is preserved natively by BBMap (no manual reconstruction required)
 */
 process DECONTA_BBWRAP {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-2_Decontamination", mode: 'copy'
 
     input:
@@ -155,7 +155,7 @@ process DECONTA_BBWRAP {
 * Purpose : reduce dataset size for testing or resource optimization
 */
 process DOWNSAMPLE_BBTOOLS {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/0-3_Downsampled", mode: 'copy'
 
     input:
@@ -184,7 +184,7 @@ process DOWNSAMPLE_BBTOOLS {
 * Purpose : provide stats about downsampled data, and check if data not damaged
 */
 process QC_SEQKIT {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/0-3_Downsampled/QC", mode: 'copy'
 
     input:
@@ -220,7 +220,7 @@ process QC_SEQKIT {
 * Purpose : rapid k-mer based taxonomic assignment for quality control
 */
 process ASSIGN_KRAKEN2 {
-    label 'kraken2'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'kraken2'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -254,7 +254,7 @@ process ASSIGN_KRAKEN2 {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_MODIF {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -276,7 +276,7 @@ process MPA_MODIF {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_TO_KRONA {
-    label 'krona'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -298,7 +298,7 @@ process MPA_TO_KRONA {
 * Purpose : keep the information for plotting later
 */
 process COUNT_FASTQ_READS {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -324,7 +324,7 @@ process COUNT_FASTQ_READS {
 * Purpose : clean visualization of dominant bacterial families
 */
 process MPA_FAMILY_BARPLOT {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
         pattern: "*_familyBarplot.tsv"
@@ -359,7 +359,7 @@ process MPA_FAMILY_BARPLOT {
 * Purpose : reconstruct full amplicon sequences and simplify downstream analysis
 */
 process MERGE_FASTQ {
-    label 'flash'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'flash'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
@@ -392,7 +392,7 @@ process MERGE_FASTQ {
 * Purpose : reconstruct full amplicon sequences and simplify downstream analysis
 */
 process FASTQ_TO_FASTA {
-    label 'bbtools'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'bbtools'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
@@ -417,7 +417,7 @@ process FASTQ_TO_FASTA {
 * Purpose : reduce redundancy while preserving sequence counts
 */
 process DEREPLICATE_FASTA {
-    label 'vsearch'
+    label 'maxforks_low', 'mem_high', 'cpus_mid', 'vsearch'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
@@ -447,7 +447,7 @@ process DEREPLICATE_FASTA {
 * Purpose : reconstruct the original seq count prior to dereplication
 */
 process COUNT_DEREP_FASTA {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
@@ -473,7 +473,7 @@ process COUNT_DEREP_FASTA {
 * Purpose : assign taxonomy by sequence similarity search
 */
 process BLASTN_FASTA {
-    label 'blast'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'blast'
     publishDir "${params.result}/dev/2_Blast", mode: 'copy'
 
     input:
@@ -502,7 +502,7 @@ process BLASTN_FASTA {
 * Purpose : assign one taxon per sequence and preserve abundance information
 */
 process FILTER_BLASTN {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/2_Blast", mode: 'copy'
 
     input:
@@ -536,7 +536,7 @@ process FILTER_BLASTN {
 * Purpose : quantify taxa and generate interpretable plots
 */
 process PLOT_BLASTFILT {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/2_Blast", mode: 'copy'
 
     input:

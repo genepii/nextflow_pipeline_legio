@@ -12,7 +12,7 @@ nextflow.enable.dsl=2
 * Purpose : adapt the classifier to local dataset specificity
 */
 process IMPORT_REFSEQ {
-    label 'qiime'
+    label 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
@@ -37,7 +37,7 @@ process IMPORT_REFSEQ {
 * Purpose : prepare taxonomic annotations for classifier training
 */
 process IMPORT_TAXA {
-    label 'qiime'
+    label 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
@@ -63,7 +63,7 @@ process IMPORT_TAXA {
 * Purpose : enable taxonomic assignment of ASVs/reads
 */
 process GENERATE_CLASSIFIER_BAYES {
-    label 'qiime'
+    label 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/0_Classifier", mode: 'copy'
 
     input:
@@ -91,7 +91,7 @@ process GENERATE_CLASSIFIER_BAYES {
 * Purpose : assess sequencing quality before or after downstream processing
 */
 process QC_FASTQC {
-    label 'fastqc'
+    label 'maxforks_high', 'fastqc'
     publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
 
     input:
@@ -155,7 +155,7 @@ process QC_MULTIQC {
 * Purpose : adapter trimming + quality filtering + length filtering
 */
 process TRIM_FASTP {
-    label 'fastp'
+    label 'maxforks_mid', 'mem_low', 'cpus_low', 'fastp'
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
@@ -198,7 +198,7 @@ process TRIM_FASTP {
 * Purpose : rapid k-mer based taxonomic assignment for quality control
 */
 process ASSIGN_KRAKEN2 {
-    label 'kraken2'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'kraken2'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -235,7 +235,7 @@ process ASSIGN_KRAKEN2 {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_MODIF {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -259,7 +259,7 @@ process MPA_MODIF {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_TO_KRONA {
-    label 'krona'
+    label 'maxforks_mid', 'cpus_mid', 'krona'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
@@ -283,7 +283,7 @@ process MPA_TO_KRONA {
 * Purpose : keep the information for plotting later
 */
 process COUNT_FASTQ_READS {
-    label 'seqkit'
+    label 'maxforks_high', 'seqkit'
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy'
 
     input:
@@ -320,7 +320,7 @@ process COUNT_FASTQ_READS {
 * Purpose : clean visualisation of dominant bacterial families
 */
 process MPA_FAMILY_BARPLOT {
-    label 'python'
+    label 'maxforks_mid', 'cpus_mid', 'python'
 
     publishDir "${params.result}/dev/1_Kraken2", mode: 'copy',
         pattern: "*_familyBarplot.tsv"
@@ -359,7 +359,7 @@ process MPA_FAMILY_BARPLOT {
 * Note    : FastqManifestPhred33V2 manifest
 */
 process GENERATE_MANIFEST {
-    label 'qiime'
+    label 'maxforks_high', 'qiime'
     publishDir "${params.result}/dev/2_Qiime2", mode: 'copy'
 
     input:
@@ -428,7 +428,7 @@ process GENERATE_MANIFEST_ALL {
 * Purpose : prepare data for denoising
 */
 process IMPORT_MANIFEST {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/2_Qiime2", mode: 'copy'
 
     input:
@@ -465,7 +465,7 @@ process IMPORT_MANIFEST {
 * Purpose : generate quality plots (QC analysis)
 */
 process QC_DEMUX {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
@@ -494,7 +494,7 @@ process QC_DEMUX {
 * Purpose : denoise and generate ASVs
 */
 process DENOISE_DADA2 {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/3_Dada2", mode: 'copy'
     errorStrategy 'ignore'
 
@@ -543,7 +543,7 @@ process DENOISE_DADA2 {
 * Purpose : assess read filtering, error correction, and denoising performance
 */
 process QC_DADA2_META {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
@@ -569,7 +569,7 @@ process QC_DADA2_META {
 * Purpose : evaluate sequencing depth distribution and sample composition
 */
 process QC_DADA2_TABLE {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
@@ -595,7 +595,7 @@ process QC_DADA2_TABLE {
 * Purpose : inspect sequence diversity and representative ASVs
 */
 process QC_DADA2_REP {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/2_Classification/tmp", mode: 'copy'
 
     input:
@@ -623,7 +623,7 @@ process QC_DADA2_REP {
 * Purpose : assign taxonomy using pre-trained classifier
 */
 process SKLEARN_CLASSIFIER {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
@@ -676,7 +676,7 @@ process SKLEARN_CLASSIFIER {
 * Purpose : assign taxonomy using Blast consensus classifier
 */
 process BLAST_CLASSIFIER {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
@@ -737,7 +737,7 @@ process BLAST_CLASSIFIER {
 * Purpose : assign taxonomy using vsearch consensus classifier
 */
 process VSEARCH_CLASSIFIER {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
@@ -798,7 +798,7 @@ process VSEARCH_CLASSIFIER {
 * Purpose : focus on the taxa of interest
 */
 process TAXA_FILTERING {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     publishDir "${params.result}/dev/4_Classification", mode: 'copy'
 
     input:
@@ -841,7 +841,7 @@ process TAXA_FILTERING {
 * Purpose : evaluate community composition
 */
 process QC_CLASSIFICATION {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
     publishDir "${params.result}/2_Classification", mode: 'copy',
         pattern: "*filtBarplot.qzv"
@@ -875,7 +875,7 @@ process QC_CLASSIFICATION {
 *           to safely parameterize Krona (--p-level)
 */
 process KRONA_TAXA_LEVEL{
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
 
     input:
         tuple val(sample_id), 
@@ -924,7 +924,7 @@ process KRONA_TAXA_LEVEL{
 * Purpose : explore hierarchical taxonomic abundance
 */
 process KRONA_CLASSIFICATION {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
     publishDir "${params.result}/2_Classification", mode: 'copy',
         pattern: "*filtKrona.qzv"
@@ -961,7 +961,7 @@ process KRONA_CLASSIFICATION {
 * Purpose : explore hierarchical taxonomic abundance
 */
 process KRONA_TO_HTML {
-    label 'qiime'
+    label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
     publishDir "${params.result}/2_Classification", mode: 'copy',
         pattern: "*filtKrona*"

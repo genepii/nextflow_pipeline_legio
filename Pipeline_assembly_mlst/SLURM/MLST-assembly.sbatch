@@ -282,13 +282,23 @@ rsync -avQ \
 echo
 ### Synchronising every files/folders, dev and work not needed
 
+## Backup and replace changed files only (ReporTree DB)
 timestamp=$(date +"%Y%m%d-%H%M")
-mkdir -p "${partition_folder}/OLD/${timestamp}"
-mv "${partition_folder}"/*genes_*.tsv "${partition_folder}"/OLD/"${timestamp}"/.
-rsync -avQ \
-    "${result_folder}"/dev/Rsync/*genes_*.tsv "${partition_folder}"/
+shopt -s nullglob
+for src in "${result_folder}"/dev/Rsync/*.tsv; do
+    [[ -s "${src}" ]] || continue
+    dst="${partition_folder}/$(basename "${src}")"
+
+    [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
+
+    if [[ -f "${dst}" ]]; then
+        mkdir -p "${partition_folder}/OLD/${timestamp}"
+        mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
+    fi
+
+    cp "${src}" "${dst}"
+done
 echo ""
-### Replace old alleles.tsv and partitions.tsv by new ones
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
