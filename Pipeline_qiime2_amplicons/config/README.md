@@ -89,20 +89,8 @@ The `local` profile runs the workflow directly on the local machine.
 
 # Process resources
 
-Each process label defines the container image and computational resources used.
-
-| Process | Container | CPUs | Max concurrent tasks | Initial memory | Memory increase | Retry policy | Maximum retries |
-|---------|-----------|-----:|---------------------:|---------------:|-----------------|----------------|----------------:|
-| FastQC | `fastqc_v0.12.1.sif` | 1 | 5 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| MultiQC | `multiqc_v1.33.sif` | 1 | 1 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| Fastp | `fastp_v1.3.2.sif` | 2 | 4 | 2 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 4 |
-| QIIME2 | `qiime2-amplicon_krona_2024.10.sif` | 4 | 4 | 20 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 4 |
-
-All processes use the following retry strategy:
-
-- Retry only when the exit status is `137` (typically memory exhaustion).
-- Memory is doubled after each retry.
-- Other failures terminate the process.
+Each process label defines the container image.
+There are also labels to specify CPU usage, memory usage and the number of forks permitted. 
 
 ---
 

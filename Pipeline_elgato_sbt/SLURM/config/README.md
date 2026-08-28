@@ -63,27 +63,8 @@ The `slurm` profile runs the workflow on the local machine via SLURM.
 
 # Process resources
 
-Each process label defines the container image and computational resources used.
-
-## FastQC
-
-| Process | Container | CPUs | Max concurrent tasks | Initial memory | Memory increase | Retry policy | Maximum retries |
-|---------|-----------|-----:|---------------------:|---------------:|-----------------|----------------|----------------:|
-| FastQC | `fastqc_v0.12.1.sif` | 1 | 10 | 5 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
-| MultiQC | `multiqc_v1.33.sif` | 1 | 1 | 15 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
-| Fastp | `fastp_v1.3.2.sif` | 2 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| BBTools | `bbtools_v39.81.sif` | 8 | 2 | 90 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
-| SeqKit | `seqkit_v2.13.0.sif` | 1 | 2 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| Kraken2 | `kraken2_v2.17.1.sif` | 8 | 2 | 90 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 2 |
-| Python | `python_plot_3.11.sif` | 4 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| KronaTools | `kronatools_2.8.1.sif` | 4 | 4 | 1 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 5 |
-| ElGato | `elgato_1.22.0.sif` | 4 | 2 | 50 GB | Doubled after each retry | Retry on exit code `137` (out-of-memory) | 3 |
-
-All processes use the following retry strategy:
-
-- Retry only when the exit status is `137` (typically memory exhaustion).
-- Memory is doubled after each retry.
-- Other failures terminate the process.
+Each process label defines the container image.
+There are also labels to specify CPU usage, memory usage and the number of forks permitted. 
 
 ---
 

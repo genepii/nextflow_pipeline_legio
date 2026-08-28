@@ -37,7 +37,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--input",
+        "--copy",
         required=True,
         help="Directory where selected FASTQ files are copied"
     )
@@ -282,7 +282,7 @@ def main():
 
     fastq_index, realpath_index = copy_fastq_files(
         fastq_files,
-        args.input
+        args.copy
     )
 
     reads_1 = []

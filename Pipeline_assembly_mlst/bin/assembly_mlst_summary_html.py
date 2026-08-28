@@ -190,32 +190,33 @@ def main():
 <title>Report Seq. {{ sequencing_id }} - Analyse {{ analyse_id }}</title>
 
 <style>
-body{
+body {
     font-family: system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     margin: 0;
+    color: #263238;
 }
 
-h2{
+h2 {
     text-decoration: underline;
 }
 
-.page{
+.page {
     padding: 48px;
     padding-top: 4px; 
 }
 
-.titlebar{
-    background: black;
+.titlebar {
+    background: #263238;
     color: white;
     padding: 15px;
 }
 
-.report-title{
+.report-title {
     font-size: 22px;
     font-weight: bold;
 }
 
-.report-subtitle{
+.report-subtitle {
     font-size: 13px;
     font-weight: bold;
     margin-top: 4px;
@@ -224,32 +225,40 @@ h2{
     color: white;
 }
 
-a{
+a {
     color: inherit;
     text-decoration: underline;
 }
 
-.info-block{
+a:hover {
+    color: color: #1C2529;
+}
+
+.info-block {
     margin-top: 4px;
     margin-bottom: 8px;
     font-size: 13px;
     line-height: 1.5;
 }
 
-.info-block a{
+.info-block a {
     font-weight: bold;
-    color: blue;
+    color: #3949AB;
 }
 
-.section{
+.info-block a:hover {
+    color: #253179;
+}
+
+.section {
     margin-top: 40px;
 }
 
-.table-content{
+.table-content {
     margin:10px 43px 0 43px;
 }
 
-.table-wrapper{
+.table-wrapper {
     width: calc(100% - 174px);
     margin-left: 87px;
     margin-right: 87px;
@@ -262,53 +271,92 @@ a{
 
 .table-scroll {
     overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
 }
 
-table{
+table {
     border-collapse: collapse;
     min-width: max-content;
 }
 
-th,td{
-    border:1px solid #ccc;
+th,td {
+    border: 1px solid #CFD8DC;
     padding: 6px;
     font-size: 13px;
     white-space: nowrap;
 }
 
-.table-description{
+th {
+    background: #455A64;
+    color: white;
+}
+
+tr:hover td {
+    background-color: #E8EAF6;
+}
+
+tr:hover td:first-child {
+    background-color: #D5D8F0;
+}
+
+table th:first-child,
+table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: white;
+}
+
+table th:first-child {
+    background: #455A64;
+    z-index: 2;
+}
+
+.table-description {
     width:calc(100% - 174px);
     margin:10px 87px 0 87px;
     font-size:13px;
-    color:#555;
+    color: #607D8B;
     line-height:1.45;
 }
 
-.table-description ul{
+.table-description ul {
     margin:4px 0 0 18px;
     padding:0;
 }
 
-.table-description li{
+.table-description li {
     margin:2px 0;
 }
 
-th{
-    background: #4d4d4d;
+.amr-alert {
+    background: #FFCDD2;
+}
+
+.amr-warning {
+    background-color: #C62828;
     color: white;
+    padding: 15px;
+    font-weight: bold;
 }
 
-.amr-alert{
-    background: #ffdddd;
+.amr-warning a {
+    color: inherit;
+    text-decoration: underline;
 }
 
-hr{
+.amr-warning a:hover {
+    color: #FFCDD2;
+}
+
+hr {
     border:none;
     border-top: 1px solid #e5e5e5;
     margin: 40px 0;
 }
 
-.hidden{
+.hidden {
     display:none;
 }
 
@@ -318,7 +366,7 @@ hr{
 
 button {
     color: white;
-    background-color: #4d4d4d;
+    background-color: #546E7A;
     font-weight: 500;
     border-radius: 8px;
     font-size: 12px;
@@ -336,7 +384,7 @@ button {
 }
 
 button:hover {
-    background-color: #616161;
+    background-color: #37474F;
 }
 
 button.copy-button {
@@ -346,6 +394,11 @@ button.copy-button {
 
 button.show-button {
     margin-left: 43px;
+}
+
+.highlight {
+    color: #c00000;
+    font-weight: bold;
 }
 </style>
 
@@ -427,8 +480,8 @@ async function copyTable(button) {
 <hr>
 
 {% if amr_warning %}
-<div style="background:red;color:white;padding:15px;font-weight:bold;">
-AMR variants detected : <a href="#AMR" style="color:white;">see table</a>
+<div class="amr-warning">
+AMR variants detected : <a href="#AMR">see table</a>
 </div>
 <hr>
 {% endif %}
@@ -462,11 +515,12 @@ AMR variants detected : <a href="#AMR" style="color:white;">see table</a>
 
 <hr>
 
+<div id="Quality">
 <h2>Quality indicators</h2>
 
-<div id="Quality" class="table-description">
+<div class="table-description">
 
-Values highlighted in <span style="color:#c00000; font-weight:bold;">red and bold</span> indicate potential quality issues or results requiring attention.
+Values highlighted in <span class="highlight">red and bold</span> indicate potential quality issues or results requiring attention.
 
 <br>
 <ul>
@@ -482,6 +536,7 @@ Values highlighted in <span style="color:#c00000; font-weight:bold;">red and bol
 
 These highlights are intended as visual quality-control indicators and should be interpreted together with the complete analysis results.
 
+</div>
 </div>
 
 <hr>
@@ -546,22 +601,22 @@ These highlights are intended as visual quality-control indicators and should be
     <span style="color:#e5e5e5;">{{ display_value }}</span>
 
 {% elif value == "Contamination" %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% elif value == "Potential new spp." %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% elif col == "Depth" and num is not none and num < 30 %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% elif col == "Number_of_contigs" and num is not none and num > 200 %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% elif col == "Total_length" and num is not none and (num < 2500000 or num > 4500000) %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% elif col == "GC" and num is not none and (num < 36 or num > 40) %}
-    <span style="color:red;font-weight:bold;">{{ display_value }}</span>
+    <span class="highlight">{{ display_value }}</span>
 
 {% else %}
     {{ display_value }}

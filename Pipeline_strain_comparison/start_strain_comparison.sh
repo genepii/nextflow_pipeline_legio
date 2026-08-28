@@ -255,6 +255,8 @@ then
     LOG="error"
 fi
 
+chmod -R 777 "${result_folder}"
+
 echo "--- FINISHED ----------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
@@ -264,13 +266,14 @@ echo "--- SAVING OUTPUT DATA ---------------------------------------------------
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
+## Synchronising every files/folders, dev and work not needed
 mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "${result_folder}/" "${output_folder}/"
 echo ""
-### Synchronising every files/folders, dev and work not needed
+chmod -R 777 "${output_folder}"
 
 ## Add new Snippy results vs ST to Database
 shopt -s nullglob
@@ -288,6 +291,8 @@ for sample_dir in "${result_folder}"/dev/1_Snippy-ST/ST*/*; do
         --exclude='*.bam.bai' \
         "${sample_dir}/" \
         "${destination}/"
+
+    chmod -R 777 "${destination}"
 done
 
 echo "--- FINISHED ----------------------------------------------------------------------------------------------------------"
@@ -297,11 +302,11 @@ echo ""
 
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
-rm -r "${work_folder}"
-rm -r "${result_folder}/dev/0-1_Trimmed"            # Warning: Delete Trimmed Reads for space
+rm -fr "${work_folder}"
+rm -fr "${result_folder}/dev/0-1_Trimmed"            # Warning: Delete Trimmed Reads for space
 rm -f "${result_folder}"/dev/1_Snippy-*/*/*/*.bam*  # Warning: Delete Bam files for space
 echo "Deleting... ${tmp_folder}"
-rm -r "${tmp_folder}"
+rm -fr "${tmp_folder}"
 
 echo "--- FINISHED - to DELETE ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"

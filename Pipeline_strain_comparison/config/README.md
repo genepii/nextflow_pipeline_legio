@@ -95,23 +95,8 @@ The `local` profile runs the workflow directly on the local machine.
 
 # Process resources
 
-Each process label defines the container image and computational resources used.
-
-| Process   | Container                   | CPUs | Max concurrent tasks | Initial memory | Max retries |
-| --------- | --------------------------- | ---: | -------------------: | -------------: | ----------: |
-| Fastp     | `fastp_v1.3.2.sif`          |    5 |                    3 |           1 GB |           4 |
-| Python    | `python_plot_tree_3.11.sif` |    2 |                    8 |           1 GB |           5 |
-| Snippy    | `snippy_v4.6.0.sif`         |    4 |                    4 |           1 GB |           5 |
-| IQ-TREE   | `iqtree_v3.1.3.sif`         |    6 |                    2 |           1 GB |           5 |
-| Gubbins   | `gubbins_v3.4.3.sif`        |    2 |                    2 |           1 GB |           5 |
-| Grapetree | `grapetree_2.1.sif`         |    2 |                    3 |           1 GB |           5 |
-| ReporTree | `reportree_2.6.1.sif`       |    8 |                    2 |          40 GB |           2 |
-
-All processes use the following retry strategy:
-
-- Retry only when the exit status is `137` (typically memory exhaustion).
-- Memory is doubled after each retry.
-- Other failures terminate the process.
+Each process label defines the container image.
+There are also labels to specify CPU usage, memory usage and the number of forks permitted. 
 
 ---
 
@@ -202,6 +187,7 @@ All processes use the following retry strategy:
 | `nb`            | Number of loci in the cgMLST schema (INT).                                                                                                                                |
 | `genes`         | Path to the chewBBACA gene schema (STR).                                                                                                                                  |
 | `previous`      | Path to previous chewBBACA or ReporTree results used as input/reference data (STR).                                                                                       |
+| `previous_ncbi` | Path to previous chewBBACA or ReporTree results of NCBI samples to merge with input/reference                                                                             |
 | `nomenclature`  | Path to the nomenclature/partition file, or `none` when no nomenclature file is used (STR).                                                                               |
 | `grapetree`     | Enables or disables Grapetree analysis for the corresponding chewBBACA dataset (BOOL).                                                                                    |
 | `reportree`     | Enables or disables ReporTree analysis for the corresponding chewBBACA dataset (BOOL).                                                                                    |
@@ -227,6 +213,7 @@ All processes use the following retry strategy:
 | `rep_max_allele`     | Maximum number of allelic differences considered. `none` uses the cluster defined by `rep_min_allele` (INT/STR).   |
 | `rep_loci_called`    | Minimum proportion of loci that must be called for a sample to be included (FLOAT).                                |
 | `rep_col_metadata`   | Metadata column used by ReporTree for sample annotation/grouping (STR).                                            |
+| `rep_col_report`     | Metadata column to report during grouping (STR).                                                                   |
 | `rep_model`          | Clustering model used by ReporTree (STR).                                                                          |
 | `rep_analysis`       | Analysis method used by ReporTree (STR).                                                                           |
 

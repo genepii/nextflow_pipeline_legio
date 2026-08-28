@@ -72,37 +72,8 @@ The `slurm` profile runs the workflow on the local machine via SLURM.
 
 # Process resources
 
-Each process label defines the container image and computational resources used.
-
-| Process | Container | CPUs | Max concurrent tasks | Initial memory | Max retries |
-|---------|-----------|-----:|---------------------:|---------------:|------------:|
-| FastQC | `fastqc_v0.12.1.sif` | 1 | 5 | 1 GB | 5 |
-| MultiQC | `multiqc_v1.33.sif` | 1 | 1 | 1 GB | 5 |
-| Fastp | `fastp_v1.3.2.sif` | 2 | 4 | 2 GB | 4 |
-| BBTools | `bbtools_v39.81.sif` | 8 | 2 | 90 GB | 2 |
-| SeqKit | `seqkit_v2.13.0.sif` | 1 | 2 | 1 GB | 5 |
-| Kraken2 | `kraken2_v2.17.1.sif` | 6 | 2 | 90 GB | 2 |
-| Python | `python_plot_parsing_3.11.sif` | 4 | 4 | 1 GB | 5 |
-| Krona | `kronatools_2.8.1.sif` | 4 | 4 | 1 GB | 5 |
-| ElGato | `elgato_1.22.0.sif` | 4 | 2 | 50 GB | 3 |
-| Minimap2 | `minimap2_2.31.sif` | 8 | 2 | 90 GB | 2 |
-| Samtools | `samtools_1.23.1.sif` | 4 | 2 | 50 GB | 3 |
-| FreeBayes | `freebayes_1.3.10.sif` | 4 | 2 | 50 GB | 3 |
-| BCFtools | `bcftools_1.23.1.sif` | 4 | 2 | 50 GB | 3 |
-| SnpEff | `snpeff_5.4c.sif` | 4 | 2 | 50 GB | 3 |
-| MOMP-S | `momps_2026_05_22.sif` | 4 | 2 | 50 GB | 3 |
-| SPAdes | `spades_4.2.0.sif` | 8 | 2 | 90 GB | 2 |
-| QUAST | `quast_5.3.0.sif` | 1 | 5 | 1 GB | 5 |
-| FastANI | `fastani_1.34.sif` | 4 | 2 | 50 GB | 3 |
-| chewBBACA | `chewbbaca_3.3.10.sif` | 4 | 2 | 50 GB | 3 |
-| Grapetree | `grapetree_2.1.sif` | 1 | 5 | 1 GB | 5 |
-| ReporTree | `reportree_2.6.1.sif` | 8 | 2 | 90 GB | 2 |
-
-All processes use the following retry strategy:
-
-- Retry only when the exit status is `137` (typically memory exhaustion).
-- Memory is doubled after each retry.
-- Other failures terminate the process.
+Each process label defines the container image.
+There are also labels to specify CPU usage, memory usage and the number of forks permitted. 
 
 ---
 
@@ -271,6 +242,7 @@ All processes use the following retry strategy:
 | `rep_max_allele` | Maximum allele threshold for clustering (INT or `none` for one cluster at rep_min_allele). |
 | `rep_loci_called` | Minimum proportion of called loci required (FLOAT). |
 | `rep_col_metadata` | Metadata column used for grouping (STR). |
+| `rep_col_report` | Metadata column to report during grouping (STR). |
 
 ---
 

@@ -41,7 +41,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--input",
+        "--copy",
         required=True,
         help="Directory where selected FASTA files are copied"
     )
@@ -242,7 +242,7 @@ def main():
 
     fasta_index, realpath_index = copy_fasta_files(
         fasta_files,
-        args.input
+        args.copy
     )
 
     metadata["FASTA"] = metadata["ID"].map(

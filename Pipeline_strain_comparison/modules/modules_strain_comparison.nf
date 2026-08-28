@@ -12,7 +12,7 @@ nextflow.enable.dsl=2
 * Purpose : recursively locate the most recent FASTA assembly for each sample
 */
 process FIND_FASTA {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/ASSETS", mode: 'copy',
         pattern: "RealPath_metadata_fasta.tsv"
 
@@ -50,7 +50,7 @@ process FIND_FASTA {
     strain_comparison_find_fasta.py \
         --metadata ${metadata} \
         --output metadata_fasta.tsv \
-        --input ${params.input} \
+        --copy ${params.input} \
         --directories ${params.path_fasta.join(' ')} \
         --prefix ${prefix_arg} \
         --suffix ${suffix_arg} \
@@ -65,7 +65,7 @@ process FIND_FASTA {
 * Purpose : recursively locate the most recent FASTQ R1/R2 files for each sample
 */
 process FIND_FASTQ {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/ASSETS", mode: 'copy',
         pattern: "RealPath_metadata_fastq.tsv"
 
@@ -103,7 +103,7 @@ process FIND_FASTQ {
     strain_comparison_find_fastq.py \
         --metadata ${metadata} \
         --output metadata_fastq.tsv \
-        --input ${params.input} \
+        --copy ${params.input} \
         --directories ${params.path_fastq.join(' ')} \
         --prefix ${prefix_arg} \
         --suffix ${suffix_arg} \
@@ -118,7 +118,7 @@ process FIND_FASTQ {
 * Purpose : merge FASTA and FASTQ search results into a single metadata table
 */
 process BUILD_METADATA {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/ASSETS", mode: 'copy'
 
     input:
@@ -144,7 +144,7 @@ process BUILD_METADATA {
 * Purpose : identify samples missing sequencing files and split metadata
 */
 process CHECK_METADATA {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
 
     publishDir "${params.result}/LOGS", mode: 'copy',
         pattern: "*.log"
@@ -176,7 +176,7 @@ process CHECK_METADATA {
 * Purpose : adapter trimming + quality filtering + length filtering
 */
 process TRIM_FASTP {
-    label 'fastp'
+    label 'maxforks_mid', 'mem_low', 'cpus_low', 'fastp'
     publishDir "${params.result}/dev/0-1_Trimmed", mode: 'copy'
 
     input:
@@ -219,7 +219,7 @@ process TRIM_FASTP {
 * Purpose : call variants for each sample against its Comparison reference
 */
 process SNP_SNIPPY {
-    label 'snippy'
+    label 'maxforks_mid', 'mem_low', 'cpus_mid', 'snippy'
 
     publishDir "${params.result}/dev", mode: "copy",
         pattern: "1_Snippy-${type}/*${comparison}/${sample_id}*"
@@ -264,7 +264,7 @@ process SNP_SNIPPY {
 * Purpose : skip Snippy Core if only one sample or all VariantTotal = 0
 */
 process CHECK_SNIPPY_CORE {
-    label 'snippy'
+    label 'maxforks_mid', 'mem_low', 'cpus_mid', 'snippy'
 
     input:
     tuple val(comparison),
@@ -317,7 +317,7 @@ process CHECK_SNIPPY_CORE {
 * Purpose : generate core SNP alignment between strains of the same Comparison group
 */
 process SNP_SNIPPY_CORE {
-    label 'snippy'
+    label 'maxforks_mid', 'mem_low', 'cpus_mid', 'snippy'
 
     publishDir "${params.result}", mode: "copy",
         pattern: "1_Snippy-${type}/*${comparison}/*"
@@ -381,7 +381,7 @@ process SNP_SNIPPY_CORE {
 * Purpose : calculate pairwise distances between strains within the same Comparison group
 */
 process SNP_DIST_CORE {
-    label 'snippy'
+    label 'maxforks_mid', 'mem_low', 'cpus_mid', 'snippy'
     publishDir "${params.result}", mode: "copy"
 
     input:
@@ -434,7 +434,7 @@ process SNP_DIST_CORE {
 * Purpose : calculate pairwise SNP distance statistics between strains
 */
 process SNP_DIST_STATS {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}", mode: "copy"
 
     input:
@@ -484,7 +484,7 @@ process SNP_DIST_STATS {
 * Purpose : generate a log file listing comparisons not processed by Snippy-core
 */
 process SNIPPY_CORE_LOG {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/LOGS", mode: "copy"
 
     input:
@@ -510,7 +510,7 @@ process SNIPPY_CORE_LOG {
 * Purpose : generate a phylogenetic tree from the core SNP alignment
 */
 process PHYLOTREE_IQTREE {
-    label 'iqtree'
+    label 'maxforks_low', 'mem_low', 'cpus_high', 'iqtree'
     publishDir "${params.result}", mode: "copy"
 
     input:
@@ -576,7 +576,7 @@ process PHYLOTREE_IQTREE {
 * Purpose : produce a recombination-filtered SNP alignment
 */
 process FILTER_GUBBINS {
-    label 'gubbins'
+    label 'maxforks_low', 'mem_low', 'cpus_low', 'gubbins'
     publishDir "${params.result}/dev", mode: "copy"
 
     input:
@@ -636,7 +636,7 @@ process FILTER_GUBBINS {
 * Purpose : generate a log file listing visualisation not processed
 */
 process TREE_LOG {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/LOGS", mode: "copy"
 
     input:
@@ -660,7 +660,7 @@ process TREE_LOG {
 * Purpose : create phylogenetic tree annotated by sequence type, highlighting strains
 */
 process PLOT_IQTREE {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}", mode: "copy"
 
     input:
@@ -701,7 +701,7 @@ process PLOT_IQTREE {
 * Purpose : extract the requested cgMLST scheme for the samples of one comparison
 */
 process PREPARE_ALLELES_TSV {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
 
     publishDir "${params.result}/dev/3_cgMLST", mode: "copy",
         pattern: "${comparison}/cgMLST_${nb}genes.tsv"
@@ -742,7 +742,7 @@ process PREPARE_ALLELES_TSV {
 * Purpose : infer an MSTreeV2 tree from allele profiles
 */
 process VISU_GRAPETREE {
-    label 'grapetree'
+    label 'maxforks_high', 'mem_low', 'grapetree'
 
     publishDir "${params.result}/3_cgMLST", mode: 'copy',
         pattern: "${comparison}/${nb}genes_GrapeTree/Lp_${nb}genes.nwk"
@@ -794,7 +794,7 @@ process VISU_GRAPETREE {
 * Purpose : extract the requested cgMLST scheme of one comparison
 */
 process CHECK_ALLELES_TSV {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
 
     publishDir "${params.result}/dev/3_cgMLST", mode: "copy",
         pattern: "${comparison}/cgMLST_${nb}genes.tsv"
@@ -843,7 +843,7 @@ process CHECK_ALLELES_TSV {
 * Purpose : MLST newick tree and strain clustering
 */
 process VISU_REPORTREE {
-    label 'reportree'
+    label 'maxforks_low', 'mem_high', 'cpus_high', 'reportree'
 
     publishDir "${params.result}/3_cgMLST", mode: 'copy',
         pattern: "${comparison}/${nb}genes_ReporTree/Lp${nb}genes*"
@@ -924,7 +924,7 @@ process VISU_REPORTREE {
         --loci-called ${params.rep_loci_called} \
         --analysis ${params.rep_analysis} \
         --method ${params.rep_model} \
-        --columns_summary_report "ST,Year,Origin" \
+        --columns_summary_report ${params.rep_col_report} \
         --partitions2report 'all' \
         --metadata2report ${params.rep_col_metadata} \
         \$nomenclature_opts \
@@ -942,7 +942,7 @@ process VISU_REPORTREE {
 * Purpose : generate a log file listing visualisation not processed
 */
 process VISU_LOG {
-    label 'python'
+    label 'maxforks_high', 'cpus_low', 'python'
     publishDir "${params.result}/LOGS", mode: "copy"
 
     input:
@@ -956,5 +956,65 @@ process VISU_LOG {
     """
     echo -e "Comparison\tINFO\tID" > "${type}.log"
     cat ${log_entries} >> "${type}.log"
+    """
+}
+
+
+// -----------------------------------------------------------------------------
+//TODO: changer pour 1 comparaison par input, qu'on a des tuples avec val(comparison)
+/*
+* Generate HTML report for each comparison
+* Input   : sample metadata, SNP results, analysis logs, ST list and phylogenetic trees
+* Output  : one HTML report per comparison
+* Purpose : summarize data availability, SNP analyses, cgMLST results and phylogenetic analyses
+*/
+process GENERATE_COMPARISON_REPORT {
+    label 'maxforks_high', 'cpus_low', 'python'
+    publishDir "${params.result}", mode: "copy"
+
+    input:
+        tuple val(comparison),
+            val(st_list),
+            path(metadata),
+            path(oldpath_fasta),
+            path(oldpath_fastq),
+            path(init_svg),
+            path(filt_svg),
+            path(data_missing),
+            path(intragroup_log),
+            path(st_log),
+            path(init_log),
+            path(filt_log),
+            path(cgmlst_logs),
+            path(intra_core),
+            path(st_core),
+            path(intra_stats),
+            path(st_stats)
+
+    output:
+        path("4_Reports/Summary_${comparison}.html")
+
+    script:
+    """
+    mkdir 4_Reports
+    
+    strain_comparison_summary_html.py \
+        --st-list ${st_list} \
+        --metadata ${metadata} \
+        --oldpath-fasta ${oldpath_fasta} \
+        --oldpath-fastq ${oldpath_fastq} \
+        --init-svg ${init_svg} \
+        --filt-svg ${filt_svg} \
+        --data-missing ${data_missing} \
+        --intragroup-log ${intragroup_log} \
+        --st-log ${st_log} \
+        --init-log ${init_log} \
+        --filt-log ${filt_log} \
+        --cgmlst-log ${cgmlst_logs} \
+        --intra-core ${intra_core} \
+        --st-core ${st_core} \
+        --intra-stats ${intra_stats} \
+        --st-stats ${st_stats} \
+        --output-dir 4_Reports
     """
 }
