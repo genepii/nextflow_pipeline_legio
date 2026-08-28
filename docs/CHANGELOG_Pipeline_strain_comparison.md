@@ -20,6 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     - Improved presentation of HTML headings and anchors.
 - Addition of labels for memory and CPU resources.
 
+### Changed
+
+- Adaptation of the pipeline for execution across multiple machines and users.
+    - Adjustment of DB path.
+    - Change permissions for folders created by the launch script.
+
 ### Fixed
 
 - Fixed SLURM execution issues relating to time limits and return codes.

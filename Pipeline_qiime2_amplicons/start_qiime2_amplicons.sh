@@ -228,13 +228,13 @@ echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 mkdir -p "${tmp_folder}"
-chmod -R 777 "${tmp_folder}"
 rsync -avQ --ignore-existing \
     --include='*.fastq' \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo ""
+chmod -R 777 "${tmp_folder}"
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -248,6 +248,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
 echo ""
+chmod -R 777 "${save_folder}"
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -281,6 +282,8 @@ then
     LOG="error"
 fi
 
+chmod -R 777 "${result_folder}"
+
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
@@ -290,13 +293,14 @@ echo "--- SAVING OUTPUT DATA and REMOVING TMP DATA -----------------------------
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
+## Synchronising every files/folders, dev and work not needed
 mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "$result_folder/" "$output_folder/"
 echo ""
-### NB : synchronising every files/folders, dev and work not needed
+chmod -R 777 "${output_folder}"
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -304,10 +308,10 @@ echo ""
 
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
-rm -r "${work_folder}"
-rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
+rm -fr "${work_folder}"
+rm -fr "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
 echo "Deleting... ${tmp_folder}"
-rm -r "${tmp_folder}"
+rm -fr "${tmp_folder}"
 
 echo "--- FINISHED - to DELETE --------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"

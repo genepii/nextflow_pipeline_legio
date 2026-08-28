@@ -15,8 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Adaptation of the pipeline for execution across multiple machines.
+- Adaptation of the pipeline for execution across multiple machines and users.
     - Adjustment of DB path.
+    - Change permissions for folders created by the launch script.
 - Improvements to the management and publication of output.
     - Directory structure.
 

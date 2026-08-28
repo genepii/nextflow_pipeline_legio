@@ -32,9 +32,9 @@ display_help() {
  	echo "   -m,--tmp       [path]          temporary folder where the input files will be stored, by default : 
                                                 /srv/scratch/iai/bachcl/Raw_fastq/Legionella/Genomes/{sequencing_ID}" >&2
  	echo "   -s,--save      [path]          folder where the input files will be saved, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes/{sequencing_ID}" >&2
+                                                /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes/{sequencing_ID}" >&2
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
-                                                /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes/{sequencing_ID}/{analyse_ID}_Assembly-MLST" >&2
+                                                /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes/{sequencing_ID}/{analyse_ID}_Assembly-MLST" >&2
  	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
  	echo "   -e,--deconta   [True/False]    decontamination of reads against a database, by default : False" >&2
  	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
@@ -97,8 +97,8 @@ analyse_id=""
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_file="${script_dir}/config/assembly_mlst.config"
 
-output_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes"
-save_folder_prefix="/srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes"
+output_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes"
+save_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes"
 tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/Genomes"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/Genomes"
 adapters="true"
@@ -325,14 +325,14 @@ echo "--- SAVING INPUT DATA ----------------------------------------------------
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
-mkdir -p "${tmp_folder}"
-chmod -R 777 "${tmp_folder}"
+mkdir -p "${tmp_folder}" 
 rsync -avQ --ignore-existing \
     --include='*.fastq' \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo ""
+chmod -R 777 "${tmp_folder}"
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -346,6 +346,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
 echo ""
+chmod -R 777 "${save_folder}"
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -384,6 +385,8 @@ then
     LOG="error"
 fi
 
+chmod -R 777 ${result_folder}
+
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
@@ -393,13 +396,15 @@ echo "--- SAVING OUTPUT DATA and REMOVING TMP DATA -----------------------------
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
+
+## Synchronising every files/folders, dev and work not needed
 mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "${result_folder}/" "${output_folder}/"
 echo ""
-### Synchronising every files/folders, dev and work not needed
+chmod -R 777 "${output_folder}"
 
 ## Backup and replace changed files only (ReporTree DB)
 timestamp=$(date +"%Y%m%d-%H%M")
@@ -413,9 +418,11 @@ for src in "${result_folder}"/dev/Rsync/*.tsv; do
     if [[ -f "${dst}" ]]; then
         mkdir -p "${partition_folder}/OLD/${timestamp}"
         mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
+        chmod -R 777 "${partition_folder}/OLD/${timestamp}"
     fi
 
     cp "${src}" "${dst}"
+    chmod -R 777 "${dst}"
 done
 echo ""
 
@@ -425,11 +432,11 @@ echo ""
 
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
-rm -r "${work_folder}"
-rm -r "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
-rm -r "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
+rm -fr "${work_folder}"
+rm -fr "${result_folder}/dev/0-1_Trimmed" # Warning: Delete Trimmed Reads for space
+rm -fr "${result_folder}/dev/Rsync"       # Warning: Delete partitions.tsv / alleles.tsv after Rsync
 echo "Deleting... ${tmp_folder}"
-rm -r "${tmp_folder}"
+rm -fr "${tmp_folder}"
 
 echo "--- FINISHED - to DELETE --------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"

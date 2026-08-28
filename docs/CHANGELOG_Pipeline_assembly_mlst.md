@@ -21,8 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     - Renamed processes.
 - Improvements to the management of input files and validation checks.
     - The ‘Linked_to’ column has been made optional.
-- Adaptation of the pipeline for execution across multiple machines.
+- Adaptation of the pipeline for execution across multiple machines and users.
     - Adjustment of DB path.
+    - Change permissions for folders created by the launch script.
 - Improvements to the management and publication of output.
     - Directory structure.
     - Saving MLST results for all schemas, not just the one used in ReporTree.
