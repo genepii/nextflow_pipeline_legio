@@ -253,7 +253,7 @@ a{
     width: calc(100% - 174px);
     margin-left: 87px;
     margin-right: 87px;
-    max-height: 600px;
+    margin-bottom: 10px;
 }
 
 .table-controls {
@@ -262,7 +262,6 @@ a{
 
 .table-scroll {
     overflow-x: auto;
-    overflow-y: auto;
 }
 
 table{
