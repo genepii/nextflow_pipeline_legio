@@ -288,6 +288,9 @@ th,td {
 }
 
 th {
+    position: sticky;
+    top: 0;
+    z-index 2;
     background: #455A64;
     color: white;
 }
@@ -309,8 +312,10 @@ table td:first-child {
 }
 
 table th:first-child {
+    top: 0;
+    left: 0;
+    z-index: 3;
     background: #455A64;
-    z-index: 2;
 }
 
 .table-description {
