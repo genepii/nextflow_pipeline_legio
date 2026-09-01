@@ -28,7 +28,7 @@ cd ${SCRATCH}
 #                                                                              #
 # Aim: SLURM launch for Assembly + MLST nextflow pipeline                      #
 #                                                                              #
-# Usage:  sbatch MLST-assembly.sbatch -s NGS-WEB_serie [options]               #
+# Usage:  sbatch MLST-assembly.sbatch -S NGS-WEB_serie [options]               #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
