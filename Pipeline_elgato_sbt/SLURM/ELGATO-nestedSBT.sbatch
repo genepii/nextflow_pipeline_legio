@@ -28,17 +28,17 @@ cd ${SCRATCH}
 #                                                                              #
 # Aim: SLURM launch for El Gato Nested SBT nextflow pipeline                   #
 #                                                                              #
-# Usage:  sbatch ELGATO-nestedSBT.sbatch -s NGS-WEB_serie [options]            #
+# Usage:  sbatch ELGATO-nestedSBT.sbatch -S NGS-WEB_serie [options]            #
 # WARNING : if launched via NGS-WEB, only the copy in /NGS-WEB/ is used        #
 #                                                                              #
 ################################################################################
 
 # Help screen
 display_help() { 
-    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -s NGS-WEB_serie [options]" >&2
+    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -S NGS-WEB_serie [options]" >&2
     echo >&2
     echo >&2
-    echo "   -s             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
+    echo "   -S             [str]           NGS-WEB series, ends with date in format YYYYMMDD (required)" >&2
     echo "   -c             [path]          nextflow config file to use, by default : 
                                                 <nextflow_folder>/config/elgato_sbt.config" >&2
     echo >&2
@@ -47,10 +47,10 @@ display_help() {
 }
 
 usage() {
-    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -s <YYYYMMDD> [options]" >&2
+    echo "Usage: sbatch ELGATO-nestedSBT.sbatch -S <YYYYMMDD> [options]" >&2
     echo >&2
     echo "Options:" >&2
-    echo "  -s             NGS-WEB series (required)" >&2
+    echo "  -S             NGS-WEB series (required)" >&2
     echo "  -c             Config file" >&2
     echo "  -h             Show help" >&2
 }
@@ -85,9 +85,9 @@ if [ $# -eq 0 ]; then
 fi
 
 ### Parsing loop
-while getopts ":s:hc:" opt; do
+while getopts ":S:hc:" opt; do
     case ${opt} in
-    s)
+    S)
         # Name of the NGS-WEB series from which to retrieve the FASTQ files
         ngsweb_serie="${OPTARG}"
         # Extract last 8 characters

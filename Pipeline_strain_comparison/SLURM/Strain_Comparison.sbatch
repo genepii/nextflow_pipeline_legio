@@ -28,7 +28,7 @@ cd ${SCRATCH}
 #                                                                              #
 # Aim: SLURM launch for SNP + previous MLST nextflow pipeline                  #
 #                                                                              #
-# Usage:  sbatch Strain_Comparison.sbatch -s Comparison_Name [options]         #
+# Usage:  sbatch Strain_Comparison.sbatch -S Comparison_Name [options]         #
 # WARNING : not suitable for NGS-Web launching yet                             #
 #                                                                              #
 ################################################################################
@@ -38,7 +38,7 @@ display_help() {
     echo "Usage: sbatch Strain_Comparison.sbatch -s Comparison_Name [options]" >&2
     echo >&2
     echo >&2
-    echo "   -s             [str]           name assigned to the comparison, corresponding to the suffix of the Strains_XXXX.txt metadata file. (required)" >&2
+    echo "   -S             [str]           name assigned to the comparison, corresponding to the suffix of the Strains_XXXX.txt metadata file. (required)" >&2
     echo "   -c             [path]          nextflow config file to use, by default : 
                                                 <nextflow_folder>/config/strain_comparison.config" >&2
     echo >&2
@@ -47,10 +47,10 @@ display_help() {
 }
 
 usage() {
-    echo "Usage: sbatch Strain_Comparison.sbatch -s <name> [options]" >&2
+    echo "Usage: sbatch Strain_Comparison.sbatch -S <name> [options]" >&2
     echo >&2
     echo "Options:" >&2
-    echo "  -s             Comparison name (required)" >&2
+    echo "  -S             Comparison name (required)" >&2
     echo "  -c             Config file" >&2
     echo "  -h             Show help" >&2
 }
@@ -85,9 +85,9 @@ if [ $# -eq 0 ]; then
 fi
 
 ### Parsing loop
-while getopts ":s:hc:" opt; do
+while getopts ":S:hc:" opt; do
     case ${opt} in
-    s)
+    S)
         # Comparison name
         comparison_id="${OPTARG}"
         ;;
