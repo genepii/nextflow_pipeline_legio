@@ -154,7 +154,7 @@ done
 
 ### Create output paths
 for d in "${output_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
-    mkdir -p "${d}" && chmod -R 777 "${d}"
+    mkdir -p "${d}" && chmod -R 777 "${d}" || true
 done
 
 ## Check Metadata file
@@ -195,8 +195,8 @@ echo ""
 
 "${nf_exec}" run \
     "${pipeline_nf}" \
-    -c "${SCRATCH}/SLURM.conf" \
     -c "${config_file}" \
+    -c "${SCRATCH}/SLURM.conf" \
     -w "${work_folder}" \
     --tmp_dir "${tmp_folder}" \
     --suffix "${comparison_id}" \
@@ -204,7 +204,7 @@ echo ""
     -with-trace "${result_folder}/LOGS/nextflow_${comparison_id}.txt" \
     -with-report "${result_folder}/LOGS/nextflow_${comparison_id}.html"
 
-chmod -R 777 "${result_folder}"
+chmod -R 777 "${result_folder}" || true
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -216,13 +216,12 @@ echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Synchronising every files/folders, dev and work not needed
-mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "${result_folder}/" "${output_folder}/"
 echo
-chmod -R 777 "${output_folder}"
+chmod -R 777 "${output_folder}" || true
 
 ### Add new Snippy results vs ST to Database
 shopt -s nullglob
@@ -241,7 +240,7 @@ for sample_dir in "${result_folder}"/dev/1_Snippy-ST/ST*/*; do
         "${sample_dir}/" \
         "${destination}/"
         
-    chmod -R 777 "${destination}"
+    chmod -R 777 "${destination}" || true
 done
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"

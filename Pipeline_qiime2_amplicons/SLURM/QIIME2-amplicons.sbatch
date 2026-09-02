@@ -163,7 +163,7 @@ done
 
 ### Create output paths
 for d in "${output_folder}" "${save_folder}" "${tmp_folder}" "${work_folder}" "${result_folder}"; do
-    mkdir -p "${d}" && chmod -R 777 "${d}"
+    mkdir -p "${d}" && chmod -R 777 "${d}" || true
 done
 
 ### Check input_folder exists
@@ -192,29 +192,26 @@ echo "--- SAVING INPUT DATA ----------------------------------------------------
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
-mkdir -p "${tmp_folder}"
-chmod -R 777 "${tmp_folder}"
 rsync -avQ --ignore-existing \
     --include='*.fastq' \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo
-chmod -R 777 "${tmp_folder}"
+chmod -R 777 "${tmp_folder}" || true
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Copy raw data from input server to storage server
-mkdir -p "${save_folder}"
 rsync -avQ --ignore-existing \
     --include='*.fastq' \
     --include='*.fastq.gz' \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
 echo
-chmod -R 777 "${save_folder}"
+chmod -R 777 "${save_folder}" || true
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -231,8 +228,8 @@ echo
 
 "${nf_exec}" run \
     "${pipeline_nf}" \
-    -c "${SCRATCH}/SLURM.conf" \
     -c "${config_file}" \
+    -c "${SCRATCH}/SLURM.conf" \
     -w "${work_folder}" \
     --input_dir "${tmp_folder}" \
     --suffix "${ngsweb_id}" \
@@ -240,7 +237,7 @@ echo
     -with-trace "${result_folder}/LOGS/nextflow_${ngsweb_id}.txt" \
     -with-report "${result_folder}/LOGS/nextflow_${ngsweb_id}.html"
 
-chmod -R 777 "${result_folder}"
+chmod -R 777 "${result_folder}" || true
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -252,13 +249,12 @@ echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo
 
 ## Synchronising every files/folders, dev and work not needed
-mkdir -p "${output_folder}"
 rsync -avQ \
     --exclude='dev' \
     --exclude='work' \
     "$result_folder/" "$output_folder/"
 echo
-chmod -R 777 "${output_folder}"
+chmod -R 777 "${output_folder}" || true
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
