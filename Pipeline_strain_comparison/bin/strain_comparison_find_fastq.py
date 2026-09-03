@@ -2,18 +2,33 @@
 
 """
 Recursively search FASTQ files using configurable naming rules.
-Select the newest R1 and R2 files for each sample and copy them to the output directory.
+
+Select the newest R1 and R2 files for each sample and copy them
+to the output directory.
+
+Input directories can be:
+    - regular paths without wildcards
+    - paths containing one or more '*' wildcards
+
+Examples:
+    /data/fastq
+    /data/fastq/*/contigs
+    /data/fastq/*/contigs/*/500b
 
 Generate two metadata files:
-    - output: paths to copied FASTQ files
-    - RealPath_<output>: original FASTQ file paths
+    - output:
+        paths to copied FASTQ files
+    - RealPath_<output>:
+        original FASTQ file paths
 """
 
 from pathlib import Path
 import argparse
 import fnmatch
+import glob
 import re
 import shutil
+
 import pandas as pd
 
 
@@ -46,7 +61,7 @@ def parse_arguments():
         "--directories",
         nargs="+",
         required=True,
-        help="FASTQ search directories"
+        help="FASTQ search directories or paths containing '*'"
     )
 
     parser.add_argument(
@@ -140,12 +155,52 @@ def detect_read(filename):
     return None
 
 
+def expand_directories(directories):
+    """
+    Expand directory paths containing '*' wildcards.
+
+    Paths without wildcards are also accepted.
+
+    Examples:
+        /data/fastq
+        /data/fastq/*/contigs
+        /data/fastq/*/contigs/*/500b
+
+    Returns:
+        List of existing directories matching the input paths.
+    """
+
+    expanded_directories = []
+
+    for directory in directories:
+
+        # Expand '*' if present.
+        # If there is no wildcard, glob() simply returns the
+        # existing path.
+        matches = glob.glob(directory)
+
+        for match in matches:
+
+            path = Path(match)
+
+            if path.is_dir():
+                expanded_directories.append(path)
+
+    # Remove duplicate directories while preserving their order.
+    return list(
+        dict.fromkeys(expanded_directories)
+    )
+
+
 def find_fastq_files(
     directories,
     sample_patterns
 ):
     """
     Search FASTQ files recursively.
+
+    Input directories can contain '*' wildcards. Every directory
+    matching the provided patterns is searched recursively.
 
     Keep the newest matching R1/R2 file for each sample.
     """
@@ -158,12 +213,12 @@ def find_fastq_files(
         for pattern in patterns:
             pattern_lookup[pattern] = sample
 
-    for directory in directories:
+    # Expand directory patterns before starting the recursive search.
+    search_directories = expand_directories(
+        directories
+    )
 
-        root = Path(directory)
-
-        if not root.exists():
-            continue
+    for root in search_directories:
 
         for file in root.rglob("*"):
 
@@ -172,7 +227,7 @@ def find_fastq_files(
 
             sample = None
 
-            # Match filenames using shell-style wildcards
+            # Match filenames using shell-style wildcards.
             for pattern, sample_id in pattern_lookup.items():
 
                 if fnmatch.fnmatch(
@@ -197,6 +252,7 @@ def find_fastq_files(
 
             mtime = file.stat().st_mtime
 
+            # Keep the newest file for each sample/read pair.
             if (
                 key not in index
                 or mtime > index[key][0]

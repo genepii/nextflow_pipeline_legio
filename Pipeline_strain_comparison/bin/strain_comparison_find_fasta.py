@@ -4,9 +4,17 @@
 Recursively search FASTA files using configurable naming rules.
 
 Search rules:
-    - FASTA files are searched recursively.
+    - FASTA files are searched recursively from all matching directories.
+    - Input directories may contain shell-style wildcards such as '*'.
+    - Multiple wildcards are supported in a single path.
+    - Paths without wildcards are also supported.
     - Files located inside directories named "scaffolds" are ignored.
-    - The newest FASTA file is selected for each sample.
+    - The newest matching FASTA file is selected for each sample.
+
+Examples:
+    /data/genomes
+    /data/genomes/*/contigs
+    /data/genomes/*/contigs/*/500b
 
 Outputs:
     - output:
@@ -17,7 +25,9 @@ Outputs:
 
 from pathlib import Path
 import argparse
+import glob
 import shutil
+
 import pandas as pd
 
 
@@ -50,7 +60,10 @@ def parse_arguments():
         "--directories",
         nargs="+",
         required=True,
-        help="FASTA search directories"
+        help=(
+            "FASTA search directories or glob patterns. "
+            "For example: /data/genomes or /data/genomes/*/contigs"
+        )
     )
 
     parser.add_argument(
@@ -111,6 +124,47 @@ def build_sample_patterns(
     return patterns
 
 
+def expand_directories(directory_patterns):
+    """
+    Expand directory paths containing glob patterns.
+
+    Both regular paths and paths containing wildcards are supported.
+
+    Examples:
+        /data/genomes
+        /data/genomes/*/contigs
+        /data/genomes/*/contigs/*/500b
+
+    Returns:
+        A list of existing directories matching the input patterns.
+    """
+
+    directories = []
+
+    for pattern in directory_patterns:
+
+        # glob() returns the path itself when there is no wildcard,
+        # provided that the path exists.
+        matches = glob.glob(
+            pattern,
+            recursive=True
+        )
+
+        for match in matches:
+
+            path = Path(match)
+
+            if path.is_dir():
+                directories.append(path)
+
+    # Remove duplicates while preserving the original order.
+    unique_directories = list(
+        dict.fromkeys(directories)
+    )
+
+    return unique_directories
+
+
 def find_fasta_files(
     directories,
     sample_patterns
@@ -118,10 +172,17 @@ def find_fasta_files(
     """
     Search FASTA files recursively.
 
-    Files located inside directories named "scaffolds"
+    Input directories may contain glob patterns. All directories
+    matching these patterns are searched recursively.
+
+    Files located inside any directory named "scaffolds"
     are ignored.
 
-    Keep the newest matching file for each sample.
+    If several FASTA files match the same sample, the newest
+    file based on modification time is selected.
+
+    Returns:
+        Dictionary mapping sample IDs to selected FASTA paths.
     """
 
     index = {}
@@ -132,19 +193,17 @@ def find_fasta_files(
         for pattern in patterns:
             pattern_lookup[pattern] = sample
 
-    for directory in directories:
+    # Expand all directory patterns before starting the recursive search.
+    roots = expand_directories(directories)
 
-        root = Path(directory)
-
-        if not root.exists():
-            continue
+    for root in roots:
 
         for file in root.rglob("*"):
 
             if not file.is_file():
                 continue
 
-            # Ignore files located inside any "scaffolds" directory
+            # Ignore files located inside any "scaffolds" directory.
             if "scaffolds" in file.parts:
                 continue
 
@@ -155,6 +214,7 @@ def find_fasta_files(
 
             mtime = file.stat().st_mtime
 
+            # Keep the newest matching FASTA file for each sample.
             if (
                 sample not in index
                 or mtime > index[sample][0]
@@ -175,7 +235,7 @@ def copy_fasta_files(
     output_directory
 ):
     """
-    Copy selected FASTA files to output directory.
+    Copy selected FASTA files to the output directory.
 
     Returns:
         copied_files:
