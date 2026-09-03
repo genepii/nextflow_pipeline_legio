@@ -189,7 +189,7 @@ header=$(head -n1 "${metadata_user}")
 }
 
 ### Check columns needed
-for col in ID Year Origin Linked_to; do
+for col in ID Year Origin; do
     grep -qw "${col}" <<< "$(tr '\t' '\n' <<< "${header}")" || {
         echo "ERROR: Missing column '${col}' in ${metadata_user}" >&2
         exit 1
