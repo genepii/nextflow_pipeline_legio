@@ -843,7 +843,7 @@ process TAXA_FILTERING {
 process QC_CLASSIFICATION {
     label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
-    publishDir "${params.result}/2_Classification", mode: 'copy',
+    publishDir "${params.result}/2_Classification/filt", mode: 'copy',
         pattern: "*filtBarplot.qzv"
     publishDir "${params.result}/2_Classification/init", mode: 'copy',
         pattern: "*initBarplot.qzv"
@@ -926,7 +926,7 @@ process KRONA_TAXA_LEVEL{
 process KRONA_CLASSIFICATION {
     label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
-    publishDir "${params.result}/2_Classification", mode: 'copy',
+    publishDir "${params.result}/2_Classification/filt", mode: 'copy',
         pattern: "*filtKrona.qzv"
     publishDir "${params.result}/2_Classification/init", mode: 'copy',
         pattern: "*initKrona.qzv"
@@ -982,6 +982,50 @@ process KRONA_TO_HTML {
     qiime tools export \
         --input-path ${krona_qzv} \
         --output-path "${sample_id}_${results_type}KronaHTML"
+    """
+}
+
+/*
+* Identify negative samples after filtering
+* Input   : initial HTML directory and filtered HTML directory
+* Output  : Negative_samples.txt
+* Purpose : identify samples in the initial directory but not in the filtered one
+*/
+process IDENTIFY_NEGATIVE_SAMPLES {
+    label 'python'
+    publishDir "${params.result}/2_Classification", mode: 'copy'
+    
+    input:
+        tuple val(sample_id),
+            path(init_html),
+            val(filt_html)
+
+    output:
+        path("${sample_id}_NEG-SAMPLES.txt")
+
+    script:
+    """
+    touch "${sample_id}_NEG-SAMPLES.txt"
+
+    # List TXT files directly contained in each directory
+    ls "${init_html}"/*.txt \
+        | cut -f 2 -d "/" \
+        | sed "s/\\.txt\$//" \
+        | sort > init_samples.txt
+
+    if [ "${filt_html}" = "None" ]; then
+        # No filtered Krona output: all initial samples are negative
+        cp init_samples.txt "${sample_id}_NEG-SAMPLES.txt"
+    else
+        # List TXT files directly contained in the filtered directory
+        ls "${filt_html}"/*.txt \
+            | cut -f 2 -d "/" \
+            | sed "s/\\.txt\$//" \
+            | sort > filt_samples.txt
+
+        # Keep samples present in init but absent from filt
+        comm -23 init_samples.txt filt_samples.txt > "${sample_id}_NEG-SAMPLES.txt"
+    fi
     """
 }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 80 ]; then
-    echo "ERROR: 80 arguments expected, got $#"
+if [ "$#" -ne 81 ]; then
+    echo "ERROR: 81 arguments expected, got $#"
     exit 1
 fi
 
@@ -59,89 +59,90 @@ min_ratio_target="${26}"
 min_ratio_legio="${27}"
 min_ratio_legia="${28}"
 elgato_depth="${29}"
+elgato_kmers="${30}"
 
 # -------------------------
 # MINIMAP2
 # -------------------------
-minimap_ref="${30}"
-minimap_frag="${31}"
-minimap_optF="${32}"
-minimap_optk="${33}"
-minimap_optw="${34}"
-minimap_optA="${35}"
-minimap_optB="${36}"
-minimap_optO="${37}"
-minimap_optE="${38}"
-minimap_optr="${39}"
-minimap_optp="${40}"
-minimap_optN="${41}"
-minimap_optf="${42}"
-minimap_optn="${43}"
-minimap_optm="${44}"
-minimap_opts="${45}"
-minimap_optg="${46}"
-minimap_optheap="${47}"
-minimap_optsec="${48}"
+minimap_ref="${31}"
+minimap_frag="${32}"
+minimap_optF="${33}"
+minimap_optk="${34}"
+minimap_optw="${35}"
+minimap_optA="${36}"
+minimap_optB="${37}"
+minimap_optO="${38}"
+minimap_optE="${39}"
+minimap_optr="${40}"
+minimap_optp="${41}"
+minimap_optN="${42}"
+minimap_optf="${43}"
+minimap_optn="${44}"
+minimap_optm="${45}"
+minimap_opts="${46}"
+minimap_optg="${47}"
+minimap_optheap="${48}"
+minimap_optsec="${49}"
 
 # -------------------------
 # FREEBAYES
 # -------------------------
-freeb_targets="${49}"
-freeb_theta="${50}"
-freeb_ploidy="${51}"
-freeb_best_n="${52}"
-freeb_haplo_len="${53}"
-freeb_max_it="${54}"
-freeb_max_dep="${55}"
-freeb_min_mapqual="${56}"
-freeb_min_basequal="${57}"
-freeb_min_var="${58}"
-freeb_min_dep="${59}"
+freeb_targets="${50}"
+freeb_theta="${51}"
+freeb_ploidy="${52}"
+freeb_best_n="${53}"
+freeb_haplo_len="${54}"
+freeb_max_it="${55}"
+freeb_max_dep="${56}"
+freeb_min_mapqual="${57}"
+freeb_min_basequal="${58}"
+freeb_min_var="${59}"
+freeb_min_dep="${60}"
 
 # -------------------------
 # BCFTOOLS
 # -------------------------
-bcf_min_freq="${60}"
-bcf_qa="${61}"
+bcf_min_freq="${61}"
+bcf_qa="${62}"
 
 # -------------------------
 # SNPEFF
 # -------------------------
-snpeff_amr_config="${62}"
-snpeff_amr_scheme="${63}"
-snpeff_other_config="${64}"
-snpeff_other_scheme="${65}"
+snpeff_amr_config="${63}"
+snpeff_amr_scheme="${64}"
+snpeff_other_config="${65}"
+snpeff_other_scheme="${66}"
 
 # -------------------------
 # ASSEMBLY
 # -------------------------
-min_length_contig="${66}"
+min_length_contig="${67}"
 
 # -------------------------
 # FASTANI
 # -------------------------
-fastani_genomes="${67}"
-fastani_min="${68}"
+fastani_genomes="${68}"
+fastani_min="${69}"
 
 # -------------------------
 # REPORTREE
 # -------------------------
-rep_metadata="${69}"
-rep_partition="${70}"
-rep_interest="${71}"
-rep_zoom="${72}"
-rep_site_inclusion="${72}"
-rep_min_allele="${74}"
-rep_max_allele="${75}"
-rep_loci_called="${76}"
-rep_col_metadata="${77}"
+rep_metadata="${70}"
+rep_partition="${71}"
+rep_interest="${72}"
+rep_zoom="${73}"
+rep_site_inclusion="${73}"
+rep_min_allele="${75}"
+rep_max_allele="${76}"
+rep_loci_called="${77}"
+rep_col_metadata="${78}"
 
 # -------------------------
 # CHEWBBACA / SPECIFIC ALLELES
 # -------------------------
-lb_set_json="${78}"
-lp_set_json="${79}"
-alleles_set_json="${80}"
+lb_set_json="${79}"
+lp_set_json="${80}"
+alleles_set_json="${81}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -236,6 +237,7 @@ echo "Min target ratio    : ${min_ratio_target}"
 echo "Min Legionella ratio: ${min_ratio_legio}"
 echo "Min Legionellaceae  : ${min_ratio_legia}"
 echo "Depth threshold     : ${elgato_depth}"
+echo "Kmers size          : ${elgato_kmers}"
 echo ""
 
 echo "MINIMAP2 MAPPING"

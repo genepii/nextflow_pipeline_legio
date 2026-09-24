@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     - All files will contain at least the ID and ST columns.
     - Only one metadata file per strain.
 - Addition of labels for memory and CPU resources.
+- Addition of option to change the kmers value used by the ElGato software
 
 ### Changed
 

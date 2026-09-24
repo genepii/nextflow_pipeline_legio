@@ -303,7 +303,7 @@ echo ""
 ## Remove results from calculation engine
 echo "Deleting... ${work_folder}"
 rm -fr "${work_folder}"
-rm -fr "${result_folder}/dev/0-1_Trimmed"            # Warning: Delete Trimmed Reads for space
+#rm -fr "${result_folder}/dev/0-1_Trimmed"            # Warning: Delete Trimmed Reads for space
 rm -f "${result_folder}"/dev/1_Snippy-*/*/*/*.bam*  # Warning: Delete Bam files for space
 echo "Deleting... ${tmp_folder}"
 rm -fr "${tmp_folder}"

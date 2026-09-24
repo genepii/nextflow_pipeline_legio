@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 23 ]; then
-    echo "ERROR: 23 arguments expected, got $#"
+if [ "$#" -ne 24 ]; then
+    echo "ERROR: 24 arguments expected, got $#"
     exit 1
 fi
 
@@ -39,6 +39,7 @@ bbtools_downsampled="${21}"
 kraken2_db="${22}"
 
 elgato_depth="${23}"
+elgato_kmers="${24}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -94,6 +95,7 @@ echo ""
 
 echo "EL GATO - MLST profile"
 echo "Depth    : ${elgato_depth}"
+echo "Kmers    : ${elgato_kmers}"
 echo ""
 
 echo "--------------------------------------------------------------------------------"

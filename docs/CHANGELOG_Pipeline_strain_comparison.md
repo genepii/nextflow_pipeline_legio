@@ -19,12 +19,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
         - Phylogenetic trees generated.
     - Improved presentation of HTML headings and anchors.
 - Addition of labels for memory and CPU resources.
+- Options added to the pipeline:
+    - Option to anonymise sample names in the output. 
+    - Selection of analyses to run: intragroup SNPs, ST SNPs and/or cgMLST analysis.
+    - Possibility to merge NCBI/external database strain results with local ones for cgMLST.
 
 ### Changed
 
 - Adaptation of the pipeline for execution across multiple machines and users.
     - Adjustment of DB path.
     - Change permissions for folders created by the launch script.
+- Creation of an indicator for alleles that are absent in some samples but not in all during the retrieval of cgMLST profiles.
 
 ### Fixed
 

@@ -383,6 +383,7 @@ process MLST_ELGATO {
         --sample ${sample_id} \
         --threads ${task.cpus} \
         --depth ${params.elgato_depth} \
+        --kmer-size ${params.elgato_kmers} \
         --out ${sample_id}_reads \
         -w \
         > ${sample_id}_MLST.tsv
@@ -475,6 +476,7 @@ process CREATE_INFO {
         val(kraken2_db)
 
         val(elgato_depth)
+        val(elgato_kmers)
 
     output:
         path("pipeline_${suffix}.txt")
@@ -504,7 +506,8 @@ process CREATE_INFO {
         "${bbwrap_path}" \
         "${bbtools_downsampled}" \
         "${kraken2_db}" \
-        "${elgato_depth}"
+        "${elgato_depth}" \
+        "${elgato_kmers}"
     """
 }
 

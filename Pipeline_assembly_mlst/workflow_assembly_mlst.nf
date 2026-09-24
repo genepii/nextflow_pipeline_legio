@@ -183,6 +183,7 @@ workflow {
         params.min_ratio_legio,
         params.min_ratio_legia,
         params.elgato_depth,
+        params.elgato_kmers,
 
         params.minimap_ref,
         params.minimap_frag,

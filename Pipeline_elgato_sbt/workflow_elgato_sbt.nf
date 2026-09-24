@@ -231,7 +231,8 @@ workflow {
 
         params.kraken2_db,
 
-        params.elgato_depth
+        params.elgato_depth,
+        params.elgato_kmers
     )
 
     FASTQC_INFO(CREATE_INFO.out)

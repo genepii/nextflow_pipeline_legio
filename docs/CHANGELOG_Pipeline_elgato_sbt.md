@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added 
 - Addition of labels for memory and CPU resources.
+- Addition of option to change the kmers value used by the ElGato software
 
 ### Changed
 

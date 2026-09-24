@@ -73,6 +73,7 @@ include {
     BLAST_CLASSIFIER
     VSEARCH_CLASSIFIER
     TAXA_FILTERING
+    IDENTIFY_NEGATIVE_SAMPLES
     CREATE_INFO
     FASTQC_INFO
     MULTIQC_INFO
@@ -389,6 +390,21 @@ workflow {
     QC_FILT_CLASSIFICATION(results_type, taxa_filtered_ok_ch)
     KRONA_FILT_CLASSIFICATION(results_type, joined_filt_table_max_ch)
     KRONA_FILT_TO_HTML(results_type, KRONA_FILT_CLASSIFICATION.out)
+
+    html_folders_ch = KRONA_INIT_TO_HTML.out
+        .join(
+            KRONA_FILT_TO_HTML.out, 
+            by: 0,
+            remainder: true
+        )
+        .map { sample_id, folder_init, folder_filt ->
+            tuple(
+                sample_id,
+                folder_init,
+                folder_filt ?: "None"
+            )
+        }
+    IDENTIFY_NEGATIVE_SAMPLES(html_folders_ch)
 
     // ---------------------------
     // TRACKING CONFIG

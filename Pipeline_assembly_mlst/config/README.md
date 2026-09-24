@@ -172,6 +172,7 @@ There are also labels to specify CPU usage, memory usage and the number of forks
 | `min_ratio_legio` | Minimum proportion of reads assigned to the genus *Legionella* (FLOAT). |
 | `min_ratio_legia` | Minimum proportion of reads assigned to the group *Legionellaceae* (FLOAT). |
 | `elgato_depth` | Minimum sequencing depth required for allele calling (INT). |
+| `elgato_kmers` | Kmer sized used for mapping by minimap2 in El Gato tool (INT). |
 
 ---
 

@@ -478,6 +478,7 @@ process MLST_ELGATO {
         --sample ${sample_id} \
         --threads ${task.cpus} \
         --depth ${params.elgato_depth} \
+        --kmer-size ${params.elgato_kmers} \
         --out ${sample_id}_reads \
         -w \
         > ${sample_id}_MLST.tsv
@@ -1692,6 +1693,7 @@ process CREATE_INFO {
         val(min_ratio_legio)
         val(min_ratio_legia)
         val(elgato_depth)
+        val(elgato_kmers)
 
         val(minimap_ref)
         val(minimap_frag)
@@ -1787,6 +1789,7 @@ process CREATE_INFO {
         "${min_ratio_legio}" \
         "${min_ratio_legia}" \
         "${elgato_depth}" \
+        "${elgato_kmers}" \
         "${minimap_ref}" \
         "${minimap_frag}" \
         "${minimap_optF}" \

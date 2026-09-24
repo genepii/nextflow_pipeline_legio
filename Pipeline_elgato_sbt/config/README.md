@@ -163,6 +163,7 @@ The following parameters define the analysis to be performed.
 | Parameter | Description |
 |-----------|-------------|
 | `elgato_depth` | Minimum sequencing depth required for allele calling (INT). |
+| `elgato_kmers` | Kmer sized used for mapping by minimap2 in El Gato tool (INT). |
 | `fastfinder_desc` | Metadata field names for FastFinder, comma-separated values (STR). |
 | `fastfinder_value` | Expected values associated with the selected metadata fields, comma-separated values (STR). |
 

@@ -13,7 +13,7 @@ nextflow.enable.dsl=2
 */
 process QC_FASTQC {
     label 'maxforks_high', 'fastqc'
-    publishDir "${params.result}/0_QC/${read_type}", mode: 'copy'
+    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
 
     input:
         val(read_type)
@@ -40,7 +40,7 @@ process QC_FASTQC {
 */
 process QC_MULTIQC {
     label 'multiqc'
-    publishDir "${params.result}/0_QC/${read_type}", mode: 'copy'
+    publishDir "${params.result}/0_FastQC/${read_type}", mode: 'copy'
 
     input:
         val(read_type)
