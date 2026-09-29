@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reorganisation of the HTML report.
     - Addition of a button to copy the contents of the tables.
     - Visual changes.
+    - Group all strains of L. pneumophila under the name L. pneumophila.
 
 ### Fixed
 

@@ -170,12 +170,25 @@ def main():
     else:
         other_df = pd.DataFrame()
         
-    # Collect strain names for report sections
-    strains = (
-        sorted(df["FastANI_strain"].dropna().unique())
-        if "FastANI_strain" in df.columns
-        else []
-    )
+    # Collect unique strain names + value for report sections
+    strains = [
+        "L_pneumophila" if "L_pneumophila" in str(x) else x
+        for x in df["FastANI_strain"].dropna()
+    ]
+    strains = sorted(pd.Series(strains).dropna().unique())
+
+    strain_data = {}
+    for strain in strains:
+        if strain == "L_pneumophila":
+            strain_data[strain] = df[
+                df["FastANI_strain"]
+                .fillna("")
+                .str.contains("L_pneumophila", na=False)
+            ]
+        else:
+            strain_data[strain] = df[
+                df["FastANI_strain"] == strain
+            ]
 
     # Read software/settings file
     try:
@@ -569,7 +582,11 @@ These highlights are intended as visual quality-control indicators and should be
 {% for s in strains %}
 <div class="section" id="{{ s }}">
 
+{% if s == "L_pneumophila" %}
+<h3><i>L pneumophila</i></h3>
+{% else %}
 <h3><i>{{ s.replace("_", " ") }}</i></h3>
+{% endif %}
 
 <div class="table-wrapper">
 
@@ -586,7 +603,9 @@ These highlights are intended as visual quality-control indicators and should be
 {% endfor %}
 </tr>
 
-{% for _, row in df[df["FastANI_strain"] == s].iterrows() %}
+{% set strain_rows = strain_data[s] %}
+
+{% for _, row in strain_rows.iterrows() %}
 <tr>
 {% for col in main_columns %}
 <td>
@@ -637,7 +656,6 @@ These highlights are intended as visual quality-control indicators and should be
 </div>
 
 </div>
-
 {% endfor %}
 
 </div>
@@ -760,6 +778,7 @@ class="amr-alert"
         sequencing_id=args.sequencing_id,
         date=datetime.now().strftime("%A %d %B %Y, %H:%M:%S"),
         df=df,
+        strain_data=strain_data,
         amr_df=amr_df,
         other_df=other_df,
         strains=strains,
