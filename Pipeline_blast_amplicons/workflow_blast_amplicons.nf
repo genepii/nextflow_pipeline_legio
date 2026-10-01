@@ -47,6 +47,9 @@ if (params.paired_end) {
 // -----------------------------------------------------------------------------
 
 include {
+    QC_FASTQC as QC_FASTQC_RAW 
+    QC_MULTIQC as QC_MULTIQC_RAW
+    PLOT_BLASTFILT as PLOT_BLASTLOOSE
     TRIM_FASTP
     DECONTA_BBWRAP
     DOWNSAMPLE_BBTOOLS
@@ -78,27 +81,14 @@ include {
 } from './modules/modules_blast_amplicons.nf'
 
 include { 
-    QC_FASTQC as QC_FASTQC_RAW 
-    QC_MULTIQC as QC_MULTIQC_RAW
-} from './modules/modules_blast_amplicons.nf'
-
-include { 
     QC_FASTQC as QC_FASTQC_TRIM 
     QC_MULTIQC as QC_MULTIQC_TRIM
+    PLOT_BLASTFILT as PLOT_BLASTSTRICT
 } from './modules/modules_blast_amplicons.nf'
 
 include { 
     QC_FASTQC as QC_FASTQC_PROC 
     QC_MULTIQC as QC_MULTIQC_PROC
-} from './modules/modules_blast_amplicons.nf'
-
-include { 
-    PLOT_BLASTFILT as PLOT_BLASTLOOSE
-} from './modules/modules_blast_amplicons.nf'
-
-
-include { 
-    PLOT_BLASTFILT as PLOT_BLASTSTRICT
 } from './modules/modules_blast_amplicons.nf'
 
 

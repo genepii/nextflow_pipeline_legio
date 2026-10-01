@@ -988,7 +988,7 @@ process KRONA_TO_HTML {
 /*
 * Identify negative samples after filtering
 * Input   : initial HTML directory and filtered HTML directory
-* Output  : Negative_samples.txt
+* Output  : *_UNDETERMINED.txt
 * Purpose : identify samples in the initial directory but not in the filtered one
 */
 process IDENTIFY_NEGATIVE_SAMPLES {
@@ -1001,11 +1001,11 @@ process IDENTIFY_NEGATIVE_SAMPLES {
             val(filt_html)
 
     output:
-        path("${sample_id}_NEG-SAMPLES.txt")
+        path("${sample_id}_UNDETERMINED.txt")
 
     script:
     """
-    touch "${sample_id}_NEG-SAMPLES.txt"
+    touch "${sample_id}_UNDETERMINED.txt"
 
     # List TXT files directly contained in each directory
     ls "${init_html}"/*.txt \
@@ -1015,7 +1015,7 @@ process IDENTIFY_NEGATIVE_SAMPLES {
 
     if [ "${filt_html}" = "None" ]; then
         # No filtered Krona output: all initial samples are negative
-        cp init_samples.txt "${sample_id}_NEG-SAMPLES.txt"
+        cp init_samples.txt "${sample_id}_UNDETERMINED.txt"
     else
         # List TXT files directly contained in the filtered directory
         ls "${filt_html}"/*.txt \
@@ -1024,7 +1024,7 @@ process IDENTIFY_NEGATIVE_SAMPLES {
             | sort > filt_samples.txt
 
         # Keep samples present in init but absent from filt
-        comm -23 init_samples.txt filt_samples.txt > "${sample_id}_NEG-SAMPLES.txt"
+        comm -23 init_samples.txt filt_samples.txt > "${sample_id}_UNDETERMINED.txt"
     fi
     """
 }

@@ -276,14 +276,16 @@ process MPA_MODIF {
 * Purpose : explore full taxonomic composition from flattened taxonomy
 */
 process MPA_TO_KRONA {
-    label 'maxforks_mid', 'cpus_mid', 'python'
+    label 'maxforks_mid', 'cpus_mid', 'krona'
     publishDir "${params.result}/1_Kraken2", mode: 'copy'
 
     input:
-        tuple val(sample_id), path(krona_input)
+        tuple val(sample_id), 
+            path(krona_input)
 
     output:
-        tuple val(sample_id), path("${sample_id}_allKrona.html")
+        tuple val(sample_id), 
+            path("${sample_id}_allKrona.html")
 
     script:
     """
@@ -458,9 +460,9 @@ process COUNT_DEREP_FASTA {
 
     script:
     """
-    grep -o "size=[0-9]*" ${fasta} | \
+    grep -o "size=[0-9]*" "${fasta}" | \
         sed 's/size=//' | \
-        awk '{s+=\$1} END {print s}' \
+        awk '{s += \$1} END {print s+0}' \
         > "${sample_id}_totalseq.txt"
     """
 }
