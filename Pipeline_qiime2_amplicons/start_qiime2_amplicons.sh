@@ -4,12 +4,12 @@
 #                                                                              #
 # start_qiime2_amplicons.sh version 2                                          #
 #                                                                              #
-# Aurelie PETICCA, last update: 2026-04                                        #
+# Aurelie PETICCA, last update: 2026-10                                        #
 # Christophe GINEVRA, Camille JACQUELINE                                       #
 #                                                                              #
 # Aim: Launch for Qiime2 Amplicons nextflow pipeline                           #
 #                                                                              #
-# Usage:  start_qiime2_amplicons.sh sequencing_ID [options]                    #
+# Usage:  start_qiime2_amplicons.sh -d sequencing_ID [options]                 #
 #                                                                              #
 ################################################################################
 
@@ -36,8 +36,9 @@ display_help() {
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
                                                 /srv/autofs/nfs4/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/23S-5S/{sequencing_ID}/{analyse_ID}_Qiime2-amplicons" >&2
  	echo "   -pe,--paired   [True/False]    PE (True) or SE (False) Illumina sequencing, by default : True" >&2
- 	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : False" >&2
+ 	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : True" >&2
  	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
+ 	echo "   -e,--denoise   [True/False]    perform DADA2 denoising step (True) or VSearch Deduplicated (False), by default : True" >&2
  	echo "   -l,--classif   [str]           use blast, sklearn or vsearch for taxonomic classification, by default : sklearn" >&2
 	echo >&2
  	echo "   -h, --help                     write this report and exit" >&2
@@ -58,6 +59,7 @@ usage() {
     echo "  -pe, --paired  Paired-end (True/False)"
     echo "  -a, --all      One or separately (True/False)"
     echo "  -t, --adapters Remove Illumina adapters (True/False)"
+    echo "  -e, --denoise  Dada2 denoising (True) or Vsearch deduplicated (False)"
     echo "  -l, --classif  Classifier choice (blast, sklearn, vsearch)"
     echo "  -h, --help     Help"
 }
@@ -73,6 +75,7 @@ save_folder_prefix=""
 tmp_folder_prefix=""
 work_folder_prefix=""
 paired_end=""
+denoising=""
 all_in_one=""
 adapters=""
 analyse_id=""
@@ -88,6 +91,7 @@ work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
 paired_end="true"
 all_in_one="true"
 adapters="true"
+denoising="true"
 classifier="sklearn"
 analyse_id=$(date +%Y%m%d)
 
@@ -161,6 +165,11 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
 
+        -e|--denoise)
+            denoising="${2:?ERROR: missing value for --denoise}"
+            shift 2
+            ;;
+
         -l|--classif)
             classifier="${2:?ERROR: missing value for --classif}"
             if [[ "$classifier" != "blast" && "$classifier" != "vsearch" && "$classifier" != "sklearn" ]]; then
@@ -219,7 +228,7 @@ result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Qiime2-ampli
 pipeline_file="${script_dir}/workflow_qiime2_amplicons.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo ""
 
 ## Copy raw data from input server to calculation engine
@@ -234,7 +243,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo ""
-chmod -R 777 "${tmp_folder}"
+chmod -R 777 "${tmp_folder}" 2>/dev/null
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -248,7 +257,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
 echo ""
-chmod -R 777 "${save_folder}"
+chmod -R 777 "${save_folder}" 2>/dev/null
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -276,13 +285,14 @@ if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     --all_in_one "${all_in_one}" \
     --adapters "${adapters}" \
     --classifier "${classifier}" \
+    --denoising "${denoising}" \
     -with-trace "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.txt" \
     -with-report "${result_folder}/LOGS/nextflow_${sequencing_id}_${analyse_id}.html"
 then
     LOG="error"
 fi
 
-chmod -R 777 "${result_folder}"
+chmod -R 777 "${result_folder}" 2>/dev/null
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -300,7 +310,7 @@ rsync -avQ \
     --exclude='work' \
     "$result_folder/" "$output_folder/"
 echo ""
-chmod -R 777 "${output_folder}"
+chmod -R 777 "${output_folder}" 2>/dev/null
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -321,4 +331,4 @@ echo ""
 # echo "L'analyse QIIME2 AMPLICONS du run Legionella-Amplicons-${sequencing_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse QIIME2 Legionella-Amplicons-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

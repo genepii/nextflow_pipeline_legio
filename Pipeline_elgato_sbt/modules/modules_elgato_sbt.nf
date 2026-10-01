@@ -407,26 +407,23 @@ process MLST_ELGATO {
 process MERGE_ELGATO {
     label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
 
-    publishDir "${params.result}", mode: 'copy',
-        pattern: "*.csv"
-    publishDir "${params.result}/2_ElGato", mode: 'copy',
-        pattern: "*.tsv"
+    publishDir "${params.result}", mode: 'copy'
 
     input:
         path(mlst_files)
         path(fastfinder_files)
     
     output:
-        path("MLST_ElGatoResults_${params.suffix}.tsv"), emit: mlst
+        path("SBT_ElGatoResults_${params.suffix}.tsv"), emit: mlst
         path("Fastfinder_ElGatoResults_${params.suffix}.csv"), emit: fastfinder
 
     script:
     """
     printf "Sample_ID\tST\tflaA\tpilE\tasd\tmip\tmompS\tproA\tneuA\n" \
-        > "MLST_ElGatoResults_${params.suffix}.tsv"
+        > "SBT_ElGatoResults_${params.suffix}.tsv"
     cat ${mlst_files}  \
         | sort -t\$'\\t' -k1,1 \
-        >> "MLST_ElGatoResults_${params.suffix}.tsv"
+        >> "SBT_ElGatoResults_${params.suffix}.tsv"
 
     
     printf "Sample ID,${params.fastfinder_desc},ST,flaA,pilE,asd,mip,mompS,proA,neuA\n" \

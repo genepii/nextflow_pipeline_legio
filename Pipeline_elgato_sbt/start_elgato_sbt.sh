@@ -228,7 +228,7 @@ result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_ElGato-Neste
 pipeline_file="${script_dir}/workflow_elgato_sbt.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
 
-echo "START -----------------------------------------------------------------------------------------------------------------"
+echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo ""
 
 ## Copy raw data from input server to calculation engine
@@ -243,7 +243,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo ""
-chmod -R 777 "${tmp_folder}"
+chmod -R 777 "${tmp_folder}" 2>/dev/null
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -257,14 +257,14 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${save_folder}/"
 echo ""
-chmod -R 777 "${save_folder}"
+chmod -R 777 "${save_folder}" 2>/dev/null
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
 ## Start Nested analysis
-echo "--- EL GATO NESTED SBT ANALYSIS STARTING ------------------------------------------------------------------------------------"
+echo "--- EL GATO NESTED SBT ANALYSIS STARTING ----------------------------------------------------------------------------------"
 echo "Start: $(date '+%d/%m/%Y %H:%M:%S')"
 echo ""
 
@@ -293,7 +293,7 @@ then
     LOG="error"
 fi
 
-chmod -R 777 "${result_folder}"
+chmod -R 777 "${result_folder}" 2>/dev/null
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -311,7 +311,7 @@ rsync -avQ \
     --exclude='work' \
     "$result_folder/" "$output_folder/"
 echo ""
-chmod -R 777 "${output_folder}"
+chmod -R 777 "${output_folder}" 2>/dev/null
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -332,4 +332,4 @@ echo ""
 # echo "L'analyse EL GATO NESTED SBT du run Legionella-Nested-SBT-${sequencing_id} est disponible ici : ${output_folder}" \
 # | mail -s "Analyse EL GATO NESTED SBT Legionella-Nested-SBT-${sequencing_id}" christophe.ginevra@chu-lyon.fr GHE.CNR-LEGIO@chu-lyon.fr
 
-echo "END -------------------------------------------------------------------------------------------------------------------"
+echo "END -----------------------------------------------------------------------------------------------------------------------"

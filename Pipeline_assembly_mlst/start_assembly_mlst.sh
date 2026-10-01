@@ -332,7 +332,7 @@ rsync -avQ --ignore-existing \
     --exclude='*' \
     "${input_folder}/" "${tmp_folder}/"
 echo ""
-chmod -R 777 "${tmp_folder}"
+chmod -R 777 "${tmp_folder}" 2>/dev/null
 
 echo "--- FINISHED - to TMP FOLDER ----------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -385,7 +385,7 @@ then
     LOG="error"
 fi
 
-chmod -R 777 ${result_folder}
+chmod -R 777 ${result_folder} 2>/dev/null
 
 echo "--- FINISHED --------------------------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
@@ -404,7 +404,7 @@ rsync -avQ \
     --exclude='work' \
     "${result_folder}/" "${output_folder}/"
 echo ""
-chmod -R 777 "${output_folder}"
+chmod -R 777 "${output_folder}" 2>/dev/null
 
 ## Backup and replace changed files only (ReporTree DB)
 timestamp=$(date +"%Y%m%d-%H%M")
@@ -418,11 +418,11 @@ for src in "${result_folder}"/dev/Rsync/*.tsv; do
     if [[ -f "${dst}" ]]; then
         mkdir -p "${partition_folder}/OLD/${timestamp}"
         mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
-        chmod -R 777 "${partition_folder}/OLD/${timestamp}"
+        chmod -R 777 "${partition_folder}/OLD/${timestamp}" 2>/dev/null
     fi
 
     cp "${src}" "${dst}"
-    chmod -R 777 "${dst}"
+    chmod -R 777 "${dst}" 2>/dev/null
 done
 echo ""
 

@@ -13,10 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Generation of an HTML report for each comparison.
     - Addition of a table of contents to the HTML report.
     - Addition of sections dedicated to:
-        - Summary of the analysis steps carried out;
         - Data analysed;
         - Detection of SNPs;
-        - Phylogenetic trees generated.
+        - Phylogenetic trees generate;
+        - cgMLST clustering trees generated.
     - Improved presentation of HTML headings and anchors.
 - Addition of labels for memory and CPU resources.
 - Options added to the pipeline:

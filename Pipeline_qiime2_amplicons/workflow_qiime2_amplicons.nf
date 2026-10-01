@@ -62,10 +62,11 @@ include {
     COUNT_FASTQ_READS
     MPA_FAMILY_BARPLOT
     QC_DEMUX
+    PREPARE_CLASSIFIER_SEQUENCES
     DENOISE_DADA2
     QC_DADA2_META
-    QC_DADA2_TABLE
-    QC_DADA2_REP
+    QC_TABLE as QC_DADA2_TABLE
+    QC_REPSEQ as QC_DADA2_REP
     IMPORT_REFSEQ
     IMPORT_TAXA
     GENERATE_CLASSIFIER_BAYES
@@ -89,6 +90,8 @@ include {
 include { 
     QC_FASTQC as QC_FASTQC_RAW 
     QC_MULTIQC as QC_MULTIQC_RAW
+    QC_TABLE as QC_PREP_TABLE
+    QC_REPSEQ as QC_PREP_REP
     QC_CLASSIFICATION as QC_INIT_CLASSIFICATION
     KRONA_TAXA_LEVEL as KRONA_INIT_LEVEL
     KRONA_CLASSIFICATION as KRONA_INIT_CLASSIFICATION
@@ -245,17 +248,27 @@ workflow {
     // ---------------------------
     // DADA2
     // ---------------------------
-    DENOISE_DADA2(IMPORT_MANIFEST.out)
-    QC_DADA2_META(DENOISE_DADA2.out.stats_dada2)
-    QC_DADA2_TABLE(DENOISE_DADA2.out.table_dada2)
-    QC_DADA2_REP(DENOISE_DADA2.out.rep_dada2)
+    if (params.denoising) {
+        DENOISE_DADA2(IMPORT_MANIFEST.out)
+        QC_DADA2_META(DENOISE_DADA2.out.stats_dada2)
+        QC_DADA2_TABLE(DENOISE_DADA2.out.table_dada2)
+        QC_DADA2_REP(DENOISE_DADA2.out.rep_dada2)
 
+        rep_seqs_ch = DENOISE_DADA2.out.rep_dada2
+        table_ch = DENOISE_DADA2.out.table_dada2
+    }
+    else {
+        PREPARE_CLASSIFIER_SEQUENCES(IMPORT_MANIFEST.out)
+        QC_PREP_TABLE(PREPARE_CLASSIFIER_SEQUENCES.out.table)
+        QC_PREP_REP(PREPARE_CLASSIFIER_SEQUENCES.out.rep_seqs)
+
+        rep_seqs_ch = PREPARE_CLASSIFIER_SEQUENCES.out.rep_seqs
+        table_ch = PREPARE_CLASSIFIER_SEQUENCES.out.table
+    }
 
     // ---------------------------
     // COUNT DADA2 SEQS + FILTER
     // ---------------------------
-    rep_seqs_ch = DENOISE_DADA2.out.rep_dada2
-
     rep_checked_ch = rep_seqs_ch.map { sample_id, rep_file ->
         def size_ok = file(rep_file).exists() && file(rep_file).size() > 0
         tuple(sample_id, rep_file, size_ok)
@@ -333,7 +346,7 @@ workflow {
 
     KRONA_INIT_LEVEL(taxa_classified_ok_ch)
 
-    joined_taxa_table_ch = taxa_classified_ok_ch.join(DENOISE_DADA2.out.table_dada2)
+    joined_taxa_table_ch = taxa_classified_ok_ch.join(table_ch)
     joined_taxa_table_max_ch = joined_taxa_table_ch.join(KRONA_INIT_LEVEL.out)
 
     QC_INIT_CLASSIFICATION(results_type, joined_taxa_table_ch)
