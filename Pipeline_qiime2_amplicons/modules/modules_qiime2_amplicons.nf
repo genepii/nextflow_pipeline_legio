@@ -6,6 +6,50 @@ nextflow.enable.dsl=2
 
 // -----------------------------------------------------------------------------
 /*
+ * Validate input FASTQ files.
+ * Input   : sample ID and single-end or paired-end FASTQ files
+ * Output  : validation status for each sample
+ * Purpose : identify samples containing empty FASTQ files before downstream analysis
+ */
+process CHECK_FASTQ {
+    label 'maxforks_high', 'mem_mid', 'python'
+
+    input:
+        tuple val(sample_id),
+              path(r1),
+              path(r2)
+
+    output:
+        tuple val(sample_id),
+              path(r1),
+              path(r2),
+              path("status.txt")
+
+    script:
+    def check_r2 = params.paired_end ? """
+    if ! zcat -f "${r2}" | awk 'NR % 4 == 2 && length(\\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
+        status="EMPTY"
+        echo "${r2}" >> empty_fastq.log
+    fi
+    """ : ""
+
+    """
+    status="OK"
+
+    if ! zcat -f "${r1}" | awk 'NR % 4 == 2 && length(\\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
+        status="EMPTY"
+        echo "${r1}" > empty_fastq.log
+    fi
+
+    ${check_r2}
+
+    echo "\${status}" > status.txt
+    """
+}
+
+
+// -----------------------------------------------------------------------------
+/*
 * Custom 23S–5S reference database
 * Input   : FASTA sequences and associated taxonomy file
 * Output  : trained Naive Bayes classifier (QIIME2 artifact)

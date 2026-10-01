@@ -47,6 +47,7 @@ if (params.paired_end) {
 // -----------------------------------------------------------------------------
 
 include {
+    CHECK_FASTQ
     QC_FASTQC as QC_FASTQC_RAW 
     QC_MULTIQC as QC_MULTIQC_RAW
     PLOT_BLASTFILT as PLOT_BLASTLOOSE
@@ -105,12 +106,21 @@ workflow {
         error "Only paired-end (PE) data are supported. Single-end mode is not allowed."
     }
 
+    CHECK_FASTQ(inputs_ch)
+    valid_inputs_ch = CHECK_FASTQ.out
+        .filter { sample_id, read1, read2, status -> 
+            status.text.trim() == 'OK'
+        }
+        .map { sample_id, read1, read2, status ->
+            tuple(sample_id, read1, read2)
+        }
+
     // ---------------------------
     // raw QC PLOTS
     // ---------------------------
     read_type_raw = "0_Raw"
 
-    qc_raw = QC_FASTQC_RAW(read_type_raw, inputs_ch)
+    qc_raw = QC_FASTQC_RAW(read_type_raw, valid_inputs_ch)
 
     raw_fastqc_zips = qc_raw.zip_files
         .map { sample_id, zip -> zip }
@@ -122,7 +132,7 @@ workflow {
     // ---------------------------
     // TRIMMING
     // ---------------------------
-    samples_ch = TRIM_FASTP(inputs_ch)
+    samples_ch = TRIM_FASTP(valid_inputs_ch)
 
     // ---------------------------
     // trim QC PLOTS

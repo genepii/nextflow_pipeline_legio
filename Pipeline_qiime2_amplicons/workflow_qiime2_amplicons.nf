@@ -52,6 +52,7 @@ taxa_ch = Channel.value(file(params.taxa))
 // -----------------------------------------------------------------------------
 
 include {
+    CHECK_FASTQ
     TRIM_FASTP
     GENERATE_MANIFEST
     GENERATE_MANIFEST_ALL
@@ -141,11 +142,23 @@ workflow {
 
 
     // ---------------------------
+    // valid FASTQ not empty
+    // ---------------------------
+    CHECK_FASTQ(inputs_ch)
+    valid_inputs_ch = CHECK_FASTQ.out
+        .filter { sample_id, read1, read2, status -> 
+            status.text.trim() == 'OK'
+        }
+        .map { sample_id, read1, read2, status ->
+            tuple(sample_id, read1, read2)
+        }
+
+    // ---------------------------
     // raw QC PLOTS
     // ---------------------------
     read_type_raw = "0_Raw"
 
-    qc_raw = QC_FASTQC_RAW(read_type_raw, inputs_ch)
+    qc_raw = QC_FASTQC_RAW(read_type_raw, valid_inputs_ch)
 
     raw_fastqc_zips = qc_raw.zip_files
         .map { sample_id, zip -> zip }
@@ -158,7 +171,7 @@ workflow {
     // ---------------------------
     // TRIMMING
     // ---------------------------
-    samples_ch = TRIM_FASTP(inputs_ch)
+    samples_ch = TRIM_FASTP(valid_inputs_ch)
 
 
     // ---------------------------

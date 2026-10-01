@@ -6,6 +6,46 @@ nextflow.enable.dsl=2
 
 // -----------------------------------------------------------------------------
 /*
+ * Validate input FASTQ files.
+ * Input   : sample ID and paired-end FASTQ files
+ * Output  : validation status for each sample
+ * Purpose : identify empty FASTQ files before downstream analysis
+ */
+process CHECK_FASTQ {
+    label 'maxforks_high', 'mem_mid', 'python'
+
+    input:
+        tuple val(sample_id),
+              path(r1),
+              path(r2)
+
+    output:
+        tuple val(sample_id),
+              path(r1),
+              path(r2),
+              path("status.txt")
+
+    script:
+    """
+    status="OK"
+
+    if [ ! -s "${r1}" ] || [ \$(zcat -f "${r1}" | head -n 4 | wc -l) -lt 4 ]; then
+        echo "${r1}" > empty_fastq.log
+        status="EMPTY"
+    fi
+
+    if [ ! -s "${r2}" ] || [ \$(zcat -f "${r2}" | head -n 4 | wc -l) -lt 4 ]; then
+        echo "${r2}" >> empty_fastq.log
+        status="EMPTY"
+    fi
+
+    echo "\${status}" > status.txt
+    """
+}
+
+
+// -----------------------------------------------------------------------------
+/*
 * Reads quality control
 * Input   : paired-end FASTQ files (R1, R2)
 * Output  : FastQC reports (HTML + ZIP)
@@ -17,11 +57,17 @@ process QC_FASTQC {
 
     input:
         val(read_type)
-        tuple val(sample_id), val(r1), val(r2)
+        tuple val(sample_id), 
+            val(r1), 
+            val(r2)
 
     output:
-        tuple val(sample_id), path("*.zip"), emit: zip_files
-        tuple val(sample_id), path("*.html"), emit: html_files
+        tuple val(sample_id), 
+            path("*.zip"), 
+            emit: zip_files
+        tuple val(sample_id), 
+            path("*.html"), 
+            emit: html_files
 
     script:
     """
