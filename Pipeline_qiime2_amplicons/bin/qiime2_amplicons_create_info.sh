@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 26 ]; then
-    echo "ERROR: 26 arguments expected, got $#"
+if [ "$#" -ne 31 ]; then
+    echo "ERROR: 31 arguments expected, got $#"
     exit 1
 fi
 
@@ -16,31 +16,37 @@ suffix="$3"
 paired_end="$4"
 all_in_one="$5"
 adapters="$6"
+denoising="$7"
 
-min_quality="$7"
-min_length="$8"
+min_quality="$8"
+min_length="$9"
 
-trim_left_f="$9"
-trim_left_r="${10}"
-trunc_len_f="${11}"
-trunc_len_r="${12}"
-reads_learn="${13}"
-fold_parents="${14}"
+trim_left_f="${10}"
+trim_left_r="${11}"
+trunc_len_f="${12}"
+trunc_len_r="${13}"
+reads_learn="${14}"
+fold_parents="${15}"
 
-db="${15}"
-reads="${16}"
-taxa="${17}"
+trunc_qual="${16}"
+min_overlap="${17}"
+max_diffs="${18}"
+min_mergelenght="${19}"
 
-sklearn_confidence="${18}"
-blast_identity="${19}"
-blast_maxaccepts="${20}"
-blast_query_cov="${21}"
-vsearch_identity="${22}"
-vsearch_maxaccepts="${23}"
-vsearch_query_cov="${24}"
-classifier="${25}"
+db="${20}"
+reads="${21}"
+taxa="${22}"
 
-kraken_db="${26}"
+sklearn_confidence="${23}"
+blast_identity="${24}"
+blast_maxaccepts="${25}"
+blast_query_cov="${26}"
+vsearch_identity="${27}"
+vsearch_maxaccepts="${28}"
+vsearch_query_cov="${29}"
+classifier="${30}"
+
+kraken_db="${31}"
 
 software_track_file="pipeline_${suffix}.txt"
 
@@ -80,6 +86,12 @@ else
     echo "Adapters                  : Disabled"
 fi
 
+if [ "${denoising}" = true ]; then
+    echo "Data Processing           : Denoising (DADA2)"
+else
+    echo "Data Processing           : Deduplicating (VSearch)"
+fi
+
 echo "Classifier used           : ${classifier}"
 
 echo ""
@@ -100,6 +112,13 @@ echo "Trunc length F    : ${trunc_len_f}"
 echo "Trunc length R    : ${trunc_len_r}"
 echo "Reads for model   : ${reads_learn}"
 echo "Fold parents      : ${fold_parents}"
+echo ""
+
+echo "VSEARCH DEDUPLICATING"
+echo "Trim base quality : ${trunc_qual} (not used if 0)"
+echo "Min. overlapping  : ${min_overlap}"
+echo "Max. base diff    : ${max_diffs}"
+echo "Min. final length : ${min_mergelenght}"
 echo ""
 
 echo "CLASSIFIER TRAINING"

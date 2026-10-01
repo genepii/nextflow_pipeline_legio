@@ -430,6 +430,7 @@ workflow {
         params.paired_end,
         params.all_in_one,
         params.adapters,
+        params.denoising,
 
         params.min_quality,
         params.min_length,
@@ -440,6 +441,11 @@ workflow {
         params.trunc_len_r,
         params.reads_learn,
         params.fold_parents,
+        
+        params.trunc_qual,
+        params.min_overlap,
+        params.max_diffs,
+        params.min_mergelenght,
 
         "${params.path_db}/${params.db}_classifier.qza",
         params.reads,

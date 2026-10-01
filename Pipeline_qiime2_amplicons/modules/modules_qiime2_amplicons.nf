@@ -1102,6 +1102,7 @@ process CREATE_INFO {
         val(paired_end)
         val(all_in_one)
         val(adapters)
+        val(denoising)
 
         val(min_quality)
         val(min_length)
@@ -1112,6 +1113,11 @@ process CREATE_INFO {
         val(trunc_len_r)
         val(reads_learn)
         val(fold_parents)
+
+        val(trunc_qual)
+        val(min_overlap)
+        val(max_diffs)
+        val(min_mergelenght)
 
         val(db)
         val(reads)
@@ -1140,6 +1146,7 @@ process CREATE_INFO {
         "${paired_end}" \
         "${all_in_one}" \
         "${adapters}" \
+        "${denoising}" \
         "${min_quality}" \
         "${min_length}" \
         "${trim_left_f}" \
@@ -1148,6 +1155,10 @@ process CREATE_INFO {
         "${trunc_len_r}" \
         "${reads_learn}" \
         "${fold_parents}" \
+        "${trunc_qual}" \
+        "${min_overlap}" \
+        "${max_diffs}" \
+        "${min_mergelenght}" \
         "${db}" \
         "${reads}" \
         "${taxa}" \
