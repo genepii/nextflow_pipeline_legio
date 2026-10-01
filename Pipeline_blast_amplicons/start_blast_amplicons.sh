@@ -227,6 +227,7 @@ result_folder="${work_folder_prefix}/${sequencing_id}/${analyse_id}_Blast-amplic
 ## Variables for launching nextflow
 pipeline_file="${script_dir}/workflow_blast_amplicons.nf"
 nf_exec="${script_dir}/../nextflow_25.10.4"
+export TMPDIR=/srv/scratch/iai/bachcl/tmp 
 
 echo "START ---------------------------------------------------------------------------------------------------------------------"
 echo ""
