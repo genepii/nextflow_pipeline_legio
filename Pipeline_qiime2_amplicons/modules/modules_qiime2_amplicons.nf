@@ -27,7 +27,7 @@ process CHECK_FASTQ {
 
     script:
     def check_r2 = params.paired_end ? """
-    if ! zcat -f "${r2}" | awk 'NR % 4 == 2 && length(\\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
+    if ! zcat -f "${r2}" | awk 'NR % 4 == 2 && length(\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
         status="EMPTY"
         echo "${r2}" >> empty_fastq.log
     fi
@@ -36,7 +36,7 @@ process CHECK_FASTQ {
     """
     status="OK"
 
-    if ! zcat -f "${r1}" | awk 'NR % 4 == 2 && length(\\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
+    if ! zcat -f "${r1}" | awk 'NR % 4 == 2 && length(\$0) > 0 { found=1; exit } END { exit(found ? 0 : 1) }'; then
         status="EMPTY"
         echo "${r1}" > empty_fastq.log
     fi
