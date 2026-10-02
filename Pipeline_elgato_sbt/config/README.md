@@ -42,7 +42,8 @@ This configuration file defines:
 | Parameter | Description |
 |-----------|-------------|
 | `user` | Current Linux username (`$USER`). If unavailable, defaults to `elgato-user`. |
-| `baseScratch` | Scratch directory used for temporary files and as the container home directory. |
+| `baseScratch` | Directory used for temporary files and as the container home directory. |
+| `matplotlibConfig` | Directory used for Matplotlib’s configuration and cache files. |
 
 ---
 
@@ -72,9 +73,8 @@ The `local` profile runs the workflow directly on the local machine.
 | Parameter | Value | Description |
 |-----------|------:|-------------|
 | `process.executor` | `local` | Local execution. |
-| `process.cpus` | `2` | Default number of CPUs per process. |
-| `process.memory` | `200 GB` | Maximum memory available. |
-| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+| `executor.cpus` | `16` | Maximum number of CPUs available to the executor. |
+| `executor.memory` | `300 GB` | Maximum amount of memory available to the executor. |
 
 ---
 
@@ -84,7 +84,14 @@ Before each process execution, the pipeline ensures that the temporary directory
 
 | Parameter | Description |
 |-----------|-------------|
-| `beforeScript` | Creates `${baseScratch}` if necessary and exports it as the temporary directory used by all processes. |
+| `cpus` | `1` | Default number of CPUs allocated to each process. |
+| `maxForks` | `1` | Maximum number of tasks from the same process that can run simultaneously. |
+| `memory` | `1GB` | Default amount of memory allocated to each process. |
+| `errorStrategy` | `137` | Defines how Nextflow handles a process when an error occurs. |
+| `maxRetries` | `2` | Maximum number of times a failed process can be retried. |
+| `scratch = true` | Executes each process inside a temporary scratch directory. |
+| `TMPDIR = baseScratch` | Sets the location for temporary files. |
+| `MPLCONFIGDIR = matplotlibConfig` | Sets the location for Matplotlib’s configuration and cache files. |
 
 ---
 

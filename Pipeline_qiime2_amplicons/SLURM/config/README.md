@@ -45,9 +45,8 @@ The `local` profile runs the workflow directly on the local machine.
 | Parameter | Value | Description |
 |-----------|------:|-------------|
 | `process.executor` | `local` | Local execution. |
-| `process.cpus` | `2` | Default number of CPUs per process. |
-| `process.memory` | `200 GB` | Maximum memory available. |
-| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+| `executor.cpus` | `16` | Maximum number of CPUs available to the executor. |
+| `executor.memory` | `300 GB` | Maximum amount of memory available to the executor. |
 
 The `slurm` profile runs the workflow on the local machine via SLURM.
 
@@ -56,9 +55,10 @@ The `slurm` profile runs the workflow on the local machine via SLURM.
 | `process.executor` | `slurm` | SLURM execution. |
 | `process.queue` | `diag_iai` | SLURM partition. |
 | `process.time` | `24h` | Maximum running time. |
-| `process.cpus` | `4` | Default number of CPUs per process. |
-| `process.memory` | `200 GB` | Maximum memory available. |
-| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+| `process.executor` | `local` | Local execution. |
+| `process.clusterOptions` | `--account=iai --partition=diag_iai` | Additional options passed to the cluster scheduler. |
+| `executor.cpus` | `10` | Maximum number of CPUs available to the executor. |
+| `executor.memory` | `300 GB` | Maximum amount of memory available to the executor. |
 
 ---
 
@@ -66,6 +66,9 @@ The `slurm` profile runs the workflow on the local machine via SLURM.
 
 | Parameter | Description |
 |-----------|-------------|
+| `cpus` | `1` | Default number of CPUs allocated to each process. |
+| `maxForks` | `1` | Maximum number of tasks from the same process that can run simultaneously. |
+| `memory` | `1GB` | Default amount of memory allocated to each process. |
 | `scratch = true` | Executes each process inside a temporary scratch directory. |
 | `QIIME2_DISABLE_PROVENANCE = 1` | Disables QIIME2 provenance generation to reduce output size and execution time. |
 
@@ -86,16 +89,17 @@ The following parameters define the analysis to be performed.
 
 | Parameter | Description |
 |-----------|-------------|
-| `analyse_id` | Analysis identifier automatically generated from the execution date (`YYYYMMDD`) (STR). Used to create the analysis output directory name. |
+| `analyse_ID` | Analysis identifier automatically generated from the execution date (`YYYYMMDD`) (STR). Used to create the analysis output directory name. |
 | `suffix` | Sequencing run identifier. Used as a subdirectory name to locate input FASTQ files and organize results (STR). |
 | `input_dir_prefix` | Base directory containing sequencing run folders. The final input directory is automatically built as `${input_dir_prefix}/Legionella-Amplicons-${suffix}` (PATH). |
-| `output_dir_prefix` | Base directory where final analysis outputs are stored. The final output directory is automatically built as `${output_dir_prefix}/${suffix}/${analyse_id}_Assembly-MLST` (PATH). |
+| `output_dir_prefix` | Base directory where final analysis outputs are stored. The final output directory is automatically built as `${output_dir_prefix}/${suffix}/${analyse_ID}_Assembly-MLST` (PATH). |
 | `save_dir_prefix` | Base directory used to store raw FASTQ files from the sequencing run. The final save directory is automatically built as `${save_dir_prefix}/${suffix}` (PATH). |
 | `tmp_dir_prefix` | Base directory used for temporary files generated during execution. The final temporary directory is automatically built as `${tmp_dir_prefix}/${suffix}` (PATH). |
-| `work_dir_prefix` | Base directory used for Nextflow work files and intermediate results. The final work directory is automatically built as `${work_dir_prefix}/${suffix}/${analyse_id}_Assembly-MLST` (PATH). |
+| `work_dir_prefix` | Base directory used for Nextflow work files and intermediate results. The final work directory is automatically built as `${work_dir_prefix}/${suffix}/${analyse_ID}_Assembly-MLST` (PATH). |
 | `paired_end` | Enables paired-end analysis (`true`) or single-end analysis (`false`) (true/false). |
 | `all_in_one` | If `true`, processes all samples jointly; otherwise processes samples independently (true/false). |
 | `adapters` | Enables adapter trimming using Fastp (true/false). |
+| `denoising` | If `true`, reads are denoised using DADA2 prior to classification; otherwise reads are merged into sequences and then deduplicated (true/false). |
 | `classifier` | Taxonomic classification method (`sklearn`, `blast`, or `vsearch`). |
 
 ---
@@ -123,11 +127,23 @@ The following parameters define the analysis to be performed.
 
 ---
 
+# VSEARCH deduplicating
+
+| Parameter | Description |
+|-----------|-------------|
+| `trunc_qual` | Quality threshold used for read truncation (INT). |
+| `min_overlap` | Minimum required overlap between reads (INT). |
+| `max_diffs` | Maximum number of differences allowed between reads (INT). |
+| `min_mergelenght` | Minimum length required for merged reads (INT). |
+
+---
+
 # Classifier training
 
 | Parameter | Description |
 |-----------|-------------|
 | `db` | Name of the reference database (STR). |
+| `path_db` | Path to the reference database (PATH). |
 | `reads` | Reference FASTA sequences used to train the classifier (PATH). |
 | `taxa` | Taxonomic annotation file corresponding to the reference sequences (PATH). |
 

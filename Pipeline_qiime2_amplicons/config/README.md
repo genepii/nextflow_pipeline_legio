@@ -42,7 +42,8 @@ This configuration file defines:
 | Parameter | Description |
 |-----------|-------------|
 | `user` | Current Linux username (`$USER`). If unavailable, defaults to `qiime2-user`. |
-| `baseScratch` | Scratch directory used for temporary files and as the container home directory. |
+| `baseScratch` | Directory used for temporary files and as the container home directory. |
+| `matplotlibConfig` | Directory used for Matplotlib’s configuration and cache files. |
 
 ---
 
@@ -72,9 +73,8 @@ The `local` profile runs the workflow directly on the local machine.
 | Parameter | Value | Description |
 |-----------|------:|-------------|
 | `process.executor` | `local` | Local execution. |
-| `process.cpus` | `2` | Default number of CPUs per process. |
-| `process.memory` | `200 GB` | Maximum memory available. |
-| `process.maxForks` | `1` | Maximum number of simultaneously running processes. |
+| `executor.cpus` | `16` | Maximum number of CPUs available to the executor. |
+| `executor.memory` | `300 GB` | Maximum amount of memory available to the executor. |
 
 ---
 
@@ -82,8 +82,15 @@ The `local` profile runs the workflow directly on the local machine.
 
 | Parameter | Description |
 |-----------|-------------|
+| `cpus` | `1` | Default number of CPUs allocated to each process. |
+| `maxForks` | `1` | Maximum number of tasks from the same process that can run simultaneously. |
+| `memory` | `1GB` | Default amount of memory allocated to each process. |
+| `errorStrategy` | `137` | Defines how Nextflow handles a process when an error occurs. |
+| `maxRetries` | `2` | Maximum number of times a failed process can be retried. |
 | `scratch = true` | Executes each process inside a temporary scratch directory. |
 | `QIIME2_DISABLE_PROVENANCE = 1` | Disables QIIME2 provenance generation to reduce output size and execution time. |
+| `TMPDIR = baseScratch` | Sets the location for temporary files. |
+| `MPLCONFIGDIR = matplotlibConfig` | Sets the location for Matplotlib’s configuration and cache files. |
 
 ---
 
@@ -109,6 +116,7 @@ The following parameters define the analysis to be performed.
 | `paired_end` | Enables paired-end analysis (`true`) or single-end analysis (`false`) (true/false). |
 | `all_in_one` | If `true`, processes all samples jointly; otherwise processes samples independently (true/false). |
 | `adapters` | Enables adapter trimming (true/false). |
+| `denoising` | If `true`, reads are denoised using DADA2 prior to classification; otherwise reads are merged into sequences and then deduplicated (true/false). |
 | `classifier` | Taxonomic classification method (`sklearn`, `blast`, or `vsearch`). |
 
 ---
@@ -136,11 +144,23 @@ The following parameters define the analysis to be performed.
 
 ---
 
+# VSEARCH deduplicating
+
+| Parameter | Description |
+|-----------|-------------|
+| `trunc_qual` | Quality threshold used for read truncation (INT). |
+| `min_overlap` | Minimum required overlap between reads (INT). |
+| `max_diffs` | Maximum number of differences allowed between reads (INT). |
+| `min_mergelenght` | Minimum length required for merged reads (INT). |
+
+---
+
 # Classifier training
 
 | Parameter | Description |
 |-----------|-------------|
 | `db` | Name of the reference database (STR). |
+| `path_db` | Path to the reference database (PATH). |
 | `reads` | Reference FASTA sequences used to train the classifier (PATH). |
 | `taxa` | Taxonomic annotation file corresponding to the reference sequences (PATH). |
 
