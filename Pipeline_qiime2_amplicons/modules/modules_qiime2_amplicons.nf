@@ -1061,7 +1061,7 @@ process KRONA_CLASSIFICATION {
 process KRONA_TO_HTML {
     label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
-    publishDir "${params.result}/2_Classification", mode: 'copy',
+    publishDir "${params.result}", mode: 'copy',
         pattern: "*filtKrona*"
     publishDir "${params.result}/2_Classification/init", mode: 'copy',
         pattern: "*initKrona*"
@@ -1082,6 +1082,8 @@ process KRONA_TO_HTML {
         --output-path "${sample_id}_${results_type}KronaHTML"
     """
 }
+// ${params.result}/2_Classification removed for filt to highlight the result
+// Warning : may become unreadable if `all_in_one` is set to `false`
 
 /*
 * Identify negative samples after filtering
@@ -1091,7 +1093,7 @@ process KRONA_TO_HTML {
 */
 process IDENTIFY_NEGATIVE_SAMPLES {
     label 'python'
-    publishDir "${params.result}/2_Classification", mode: 'copy'
+    publishDir "${params.result}", mode: 'copy'
     
     input:
         tuple val(sample_id),
@@ -1126,6 +1128,8 @@ process IDENTIFY_NEGATIVE_SAMPLES {
     fi
     """
 }
+// ${params.result}/2_Classification removed to highlight the result
+// Warning : may become unreadable if `all_in_one` is set to `false`
 
 
 // -----------------------------------------------------------------------------

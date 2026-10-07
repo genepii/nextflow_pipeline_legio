@@ -411,7 +411,7 @@ process MLST_ELGATO {
         tuple val(sample_id), val(r1), val(r2)
 
     output:
-        tuple val(sample_id), path("${sample_id}_MLST.tsv"), emit: mlst
+        tuple val(sample_id), path("${sample_id}_SBT.tsv"), emit: mlst
         tuple val(sample_id), path("${sample_id}.csv"), emit: fastfinder
         tuple val(sample_id), path("${sample_id}_reads")
 
@@ -426,10 +426,10 @@ process MLST_ELGATO {
         --kmer-size ${params.elgato_kmers} \
         --out ${sample_id}_reads \
         -w \
-        > ${sample_id}_MLST.tsv
+        > ${sample_id}_SBT.tsv
     
     sed "s/${sample_id}/${sample_id},${params.fastfinder_value}/g" \
-        ${sample_id}_MLST.tsv \
+        ${sample_id}_SBT.tsv \
         | sed 's/\\t/,/g' \
         | sed 's/,,/,Nvx,/g' \
         | sed 's/,0,/,FAILED,/g' \

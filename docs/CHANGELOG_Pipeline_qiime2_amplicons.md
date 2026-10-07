@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Addition of labels for memory and CPU resources.
 - Creation of a file listing the samples for which Qiime2 did not produce conclusive results.
 - Option to choose whether the data should be denoised using DADA2 or deduplicated using Vsearch.
+- Checking that FastQ files are not empty at the start.
 
 ### Changed
 
