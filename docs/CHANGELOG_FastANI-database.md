@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [liste_84_20260925] - 2026-09-25
+
+### Added
+
+- 3 species :
+    - `L_pelazae`
+    - `L_navarrensis`
+    - `L_nigrisilvae_PC997`
+
 ## [liste_81_20260707] - 2026-07-07
 
 ### Changed 

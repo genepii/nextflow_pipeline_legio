@@ -1088,7 +1088,7 @@ process KRONA_TO_HTML {
 /*
 * Identify negative samples after filtering
 * Input   : initial HTML directory and filtered HTML directory
-* Output  : *_UNDETERMINED.txt
+* Output  : *_STATUS.tsv
 * Purpose : identify samples in the initial directory but not in the filtered one
 */
 process IDENTIFY_NEGATIVE_SAMPLES {
@@ -1101,31 +1101,38 @@ process IDENTIFY_NEGATIVE_SAMPLES {
             val(filt_html)
 
     output:
-        path("${sample_id}_UNDETERMINED.txt")
+        path("${sample_id}_STATUS.tsv")
 
     script:
     """
-    touch "${sample_id}_UNDETERMINED.txt"
-
-    # List TXT files directly contained in each directory
+    # List TXT filenames from the initial directory
     ls "${init_html}"/*.txt \
         | cut -f 2 -d "/" \
         | sed "s/\\.txt\$//" \
         | sort > init_samples.txt
 
-    if [ "${filt_html}" = "None" ]; then
-        # No filtered Krona output: all initial samples are negative
-        cp init_samples.txt "${sample_id}_UNDETERMINED.txt"
-    else
-        # List TXT files directly contained in the filtered directory
-        ls "${filt_html}"/*.txt \
-            | cut -f 2 -d "/" \
-            | sed "s/\\.txt\$//" \
+    # List TXT filenames from the filtered directory, if available
+    if [ "${filt_html}" != "None" ]; then
+        find "${filt_html}" -maxdepth 1 -type f -name '*.txt' \
+            -printf '%f\\n' \
+            | sed 's/\\.txt\$//' \
             | sort > filt_samples.txt
-
-        # Keep samples present in init but absent from filt
-        comm -23 init_samples.txt filt_samples.txt > "${sample_id}_UNDETERMINED.txt"
+    else
+        touch filt_samples.txt
     fi
+
+    sort -o init_samples.txt init_samples.txt
+    sort -o filt_samples.txt filt_samples.txt
+
+    # Generate the status table
+    printf 'SAMPLES\tSTATUS\n' > "${sample_id}_STATUS.tsv"
+    {
+        comm -23 init_samples.txt filt_samples.txt \
+            | awk '{print \$0 "\tUndetermined"}'
+
+        comm -12 init_samples.txt filt_samples.txt \
+            | awk '{print \$0 "\tPositive"}'
+    } | sort >> "${sample_id}_STATUS.tsv"
     """
 }
 // ${params.result}/2_Classification removed to highlight the result
