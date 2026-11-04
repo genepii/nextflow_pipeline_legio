@@ -38,7 +38,7 @@ display_help() {
  	echo "   -pe,--paired   [True/False]    PE (True) or SE (False) Illumina sequencing, by default : True" >&2
  	echo "   -a,--all       [True/False]    analyse all the data in a single file (True) or separately (False), by default : True" >&2
  	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
- 	echo "   -e,--denoise   [True/False]    perform DADA2 denoising step (True) or VSearch Deduplicated (False), by default : True" >&2
+ 	echo "   -e,--denoise   [True/False]    perform DADA2 denoising step (True) or VSearch Deduplicated (False), by default : False" >&2
  	echo "   -l,--classif   [str]           use blast, sklearn or vsearch for taxonomic classification, by default : sklearn" >&2
 	echo >&2
  	echo "   -h, --help                     write this report and exit" >&2
@@ -91,7 +91,7 @@ work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/23S-5S"
 paired_end="true"
 all_in_one="true"
 adapters="true"
-denoising="true"
+denoising="false"
 classifier="sklearn"
 analyse_id=$(date +%Y%m%d)
 
