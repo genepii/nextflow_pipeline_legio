@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Addition of labels for memory and CPU resources.
 - Addition of option to change the kmers value used by the ElGato software.
 - Checking that FastQ files are not empty at the start.
+- Added an option to prevent new cgMLSTs from being saved to the ReporTree database. 
 
 ### Changed
 

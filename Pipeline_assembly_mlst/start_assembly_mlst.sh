@@ -36,6 +36,7 @@ display_help() {
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
                                                 /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes/{sequencing_ID}/{analyse_ID}_Assembly-MLST" >&2
  	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
+ 	echo "   -b,--dbsaved   [True/False]    save the new cgMLSTs to the database, by default : True" >&2
  	echo "   -e,--deconta   [True/False]    decontamination of reads against a database, by default : False" >&2
  	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
  	echo "   -p,--momps     [True/False]    enable MLST research by mompS, by default : False" >&2
@@ -61,6 +62,7 @@ usage() {
     echo "  -s, --save     Save folder"
     echo "  -m, --tmp      Temporary folder"
     echo "  -w, --work     Work folder"
+    echo "  -b, --dbsaved  Enable cgMLST storage"
  	echo "  -t, --adapters Remove Illumina adapters (True/False)"
  	echo "  -e, --deconta  Decontamination"
  	echo "  -n, --down     Downsampling"
@@ -82,6 +84,7 @@ output_folder_prefix=""
 save_folder_prefix=""
 tmp_folder_prefix=""
 work_folder_prefix=""
+db_save=""
 adapters=""
 deconta=""
 downsampling=""
@@ -101,6 +104,7 @@ output_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/G
 save_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes"
 tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/Genomes"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/Genomes"
+db_save="true"
 adapters="true"
 deconta="false"
 downsampling="false"
@@ -164,6 +168,11 @@ while [ $# -gt 0 ]; do
 
         -w|--work)
             work_folder_prefix="${2:?ERROR: missing value for --work}"
+            shift 2
+            ;;
+
+        -b|--dbsaved)
+            db_save="${2:?ERROR: missing value for --dbsaved}"
             shift 2
             ;;
 
@@ -407,24 +416,27 @@ echo ""
 chmod -R 777 "${output_folder}" 2>/dev/null
 
 ## Backup and replace changed files only (ReporTree DB)
-timestamp=$(date +"%Y%m%d-%H%M")
-shopt -s nullglob
-for src in "${result_folder}"/dev/Rsync/*.tsv; do
-    [[ -s "${src}" ]] || continue
-    dst="${partition_folder}/$(basename "${src}")"
+if [[ "${db_save}" == "true" || "${db_save}" == "True" ]]; then
+    timestamp=$(date +"%Y%m%d-%H%M")
+    shopt -s nullglob
+    for src in "${result_folder}"/dev/Rsync/*.tsv; do
+        [[ -s "${src}" ]] || continue
+        dst="${partition_folder}/$(basename "${src}")"
 
-    [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
+        [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
 
-    if [[ -f "${dst}" ]]; then
-        mkdir -p "${partition_folder}/OLD/${timestamp}"
-        mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
-        chmod -R 777 "${partition_folder}/OLD/${timestamp}" 2>/dev/null
-    fi
+        if [[ -f "${dst}" ]]; then
+            mkdir -p "${partition_folder}/OLD/${timestamp}"
+            mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
+            chmod -R 777 "${partition_folder}/OLD/${timestamp}" 2>/dev/null
+        fi
 
-    cp "${src}" "${dst}"
-    chmod -R 777 "${dst}" 2>/dev/null
-done
-echo ""
+        cp "${src}" "${dst}"
+        chmod -R 777 "${dst}" 2>/dev/null
+    done
+    
+    echo ""
+fi
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"
