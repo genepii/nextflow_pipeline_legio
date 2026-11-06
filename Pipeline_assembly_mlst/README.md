@@ -146,6 +146,11 @@ By default :
 
 * `-c, --config` : path to a new nextflow config file, for developping new parameters
 
+* `-b, --dbsaved` : prevent new cgMLSTs from being saved to the ReporTree database 
+
+  * `True` : save new cgMLSTs to the ReporTree database (`by default`)
+  * `False` : doesn't save new cgMLSTs to the ReporTree database
+
 ---
 
 ## HTML Output
