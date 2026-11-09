@@ -29,12 +29,12 @@ process CHECK_FASTQ {
     """
     status="OK"
 
-    if [ ! -s "${r1}" ] || [ \$(zcat -f "${r1}" | head -n 4 | wc -l) -lt 4 ]; then
+    if [ ! -s "${r1}" ] || [ \$(zcat -f "${r1}" | awk 'END { print int(NR / 4) }') -lt ${params.min_raw_seq} ]; then
         echo "${r1}" > empty_fastq.log
         status="EMPTY"
     fi
 
-    if [ ! -s "${r2}" ] || [ \$(zcat -f "${r2}" | head -n 4 | wc -l) -lt 4 ]; then
+    if [ ! -s "${r2}" ] || [ \$(zcat -f "${r2}" | awk 'END { print int(NR / 4) }') -lt ${params.min_raw_seq} ]; then
         echo "${r2}" >> empty_fastq.log
         status="EMPTY"
     fi
@@ -500,6 +500,8 @@ process MERGE_RATIO_KRAKEN2 {
 */
 process MLST_ELGATO {
     label 'maxforks_low', 'mem_mid', 'cpus_mid', 'elgato'
+
+    errorStrategy 'ignore'
 
     publishDir "${params.result}/dev/2_ElGato", mode: 'copy',
         pattern: "*.csv"

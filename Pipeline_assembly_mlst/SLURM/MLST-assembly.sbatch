@@ -198,7 +198,7 @@ done
 
 ### Check FASTQs against metadata
 valid_ids=$(tail -n +2 "${metadata_user}" | cut -f1 | tr '\n' '|' | sed 's/|$//')
-find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.fastq.gz" \) | while read -r f; do
+while read -r f; do
     base=$(basename "${f}")
     sample=${base%%_*}
 
@@ -206,7 +206,7 @@ find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.
         echo "ERROR: FASTQ sample '${sample}' not found in Metadata file" >&2
         exit 1
     }
-done
+done < <(find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.fastq.gz" \))
 
 
 ################################################################################

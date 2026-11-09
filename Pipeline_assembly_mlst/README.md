@@ -151,6 +151,8 @@ By default :
   * `True` : save new cgMLSTs to the ReporTree database (`by default`)
   * `False` : doesn't save new cgMLSTs to the ReporTree database
 
+* `--resume` : tells Nextflow to resume where it left off (equivalent to Nextflow’s -resume option)
+
 ---
 
 ## HTML Output

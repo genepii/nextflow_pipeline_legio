@@ -542,10 +542,11 @@ Values highlighted in <span class="highlight">red and bold</span> indicate poten
 
 <br>
 <ul>
-    <li><b>Depth</b> &lt; 30X</li>
+    <li><b>Depth</b> &lt; 20X</li>
     <li><b>Number_of_contigs</b> &gt; 200</li>
     <li><b>Total_length</b> &lt; 2,500,000 b or &gt; 4,500,000 b</li>
     <li><b>GC</b> &lt; 36% or &gt; 40%</li>
+    <li>Any cell containing <b>missing value for Legionella pneumophila</b> (NA, NaN, nan, etc.)</li>
     <li>Any cell containing <b>Contamination</b></li>
     <li>Any cell containing <b>Potential new spp.</b></li>
     <li>In the AMR summary, rows with <b>AMR_Nb_with_Impact &gt; 0</b> are highlighted with a light red background.</li>
@@ -621,16 +622,16 @@ These highlights are intended as visual quality-control indicators and should be
     {% set display_value = value %}
 {% endif %}
 
-{% if value in missing_value %}
+{% if value|string|lower in ["", "nan", "na", "n/a", "<na>", "null"] and s == "L_pneumophila" %}
+    <span class="highlight">{{ display_value }}</span>
+
+{% elif value|string|lower in ["", "nan", "na", "n/a", "<na>", "null"] %}
     <span style="color:#e5e5e5;">{{ display_value }}</span>
 
-{% elif value == "Contamination" %}
+{% elif value == "Contamination" or value == "Potential new spp." %}
     <span class="highlight">{{ display_value }}</span>
 
-{% elif value == "Potential new spp." %}
-    <span class="highlight">{{ display_value }}</span>
-
-{% elif col == "Depth" and num is not none and num < 30 %}
+{% elif col == "Depth" and num is not none and num < 20 %}
     <span class="highlight">{{ display_value }}</span>
 
 {% elif col == "Number_of_contigs" and num is not none and num > 200 %}

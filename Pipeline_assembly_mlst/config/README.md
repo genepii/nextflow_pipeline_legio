@@ -127,6 +127,14 @@ There are also labels to specify CPU usage, memory usage and the number of forks
 
 ---
 
+# Prerequisites
+
+| Parameter | Description |
+|-----------|-------------|
+| `min_raw_seq` | Minimum number of raw reads required to be considered acceptable for the analysis (INT). |
+
+---
+
 # Reformat / downsampling
 
 | Parameter | Description |

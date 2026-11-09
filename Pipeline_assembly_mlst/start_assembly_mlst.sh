@@ -23,6 +23,7 @@ display_help() {
 	echo >&2
  	echo >&2
  	echo "   -d,--seq_id    [str]           SEQUENCING_ID, locally a date in format YYYYMMDD, Required" >&2
+	echo >&2
  	echo "   -c,--config    [path]          nextflow config file to use, by default : 
                                                 <nextflow_folder>/config/assembly_mlst.config" >&2
  	echo "   -i,--input     [path]          folder containing the sequencing data, by default : 
@@ -35,17 +36,20 @@ display_help() {
                                                 /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes/{sequencing_ID}" >&2
  	echo "   -o,--output    [path]          folder where the final output files will be written, by default : 
                                                 /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes/{sequencing_ID}/{analyse_ID}_Assembly-MLST" >&2
- 	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
  	echo "   -b,--dbsaved   [True/False]    save the new cgMLSTs to the database, by default : True" >&2
+	echo >&2
+ 	echo "   -t,--adapters  [True/False]    remove Illumina adaptaters, by default : True" >&2
  	echo "   -e,--deconta   [True/False]    decontamination of reads against a database, by default : False" >&2
  	echo "   -n,--down      [float]         percentage of reads retained for analysis, by default : 1 (=100%)" >&2
  	echo "   -p,--momps     [True/False]    enable MLST research by mompS, by default : False" >&2
  	echo "   -f,--snpeff    [True/False]    enable SnpEff to search for changes other than AMR changes, by default : False" >&2
  	echo "   -z,--zoom      [str]           enable ReporTree zoom functionality on the samples analysed (analyse), all, none (by default), or sample(s) ID to zoom" >&2
+	echo >&2
  	echo "   -a,--meta      [path]          TSV file containing metadata for all the samples; must contain columns ID, Year, Origin and Linked_to; by default :
                                                 /srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_{sequencing_ID}.tsv" >&2
  	echo "   -r,--part      [path]          folder for cgMLST-based HC cluster file named Lp_{nb}genes_{partitions|MLSTchewbbaca}.tsv, by default :
                                                 /srv/scratch/iai/bachcl/db/legio/ReporTree" >&2
+ 	echo "   --resume                       use this to pick up where Nextflow left off" >&2
 	echo >&2
  	echo "   -h, --help                     write this report and exit" >&2
     echo >&2
@@ -56,6 +60,7 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -d, --seq_id   Sequencing ID (required)"
+    echo ""
     echo "  -c, --config   Config file"
     echo "  -i, --input    Input folder"
     echo "  -o, --output   Output folder"
@@ -63,14 +68,18 @@ usage() {
     echo "  -m, --tmp      Temporary folder"
     echo "  -w, --work     Work folder"
     echo "  -b, --dbsaved  Enable cgMLST storage"
+    echo ""
  	echo "  -t, --adapters Remove Illumina adapters (True/False)"
  	echo "  -e, --deconta  Decontamination"
  	echo "  -n, --down     Downsampling"
  	echo "  -p, --momps    MompS MLST"
  	echo "  -f, --snpeff   SnpEff other than AMR"
  	echo "  -z, --zoom     ReporTree zoom functionality"
+    echo ""
     echo "  -a, --meta     Metadata TSV file"
     echo "  -r, --part     HC cluster file"
+    echo "  --resume       Nextflow -resume"
+    echo ""
     echo "  -h, --help     Help"
 }
 
@@ -78,32 +87,23 @@ usage() {
 # Configuration
 ## Variables init
 sequencing_id=""
-config_file=""
 input_folder=""
-output_folder_prefix=""
-save_folder_prefix=""
-tmp_folder_prefix=""
-work_folder_prefix=""
-db_save=""
-adapters=""
-deconta=""
-downsampling=""
-down_to=""
-momps=""
-snpeff_other=""
-zoom=""
 metadata_user=""
-partition_folder=""
-analyse_id=""
+resume=""
+
+## Variables fixed
+analyse_id=$(date +%Y%m%d)
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+copy_folder_db="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/GLOBAL_SUMMARY"
 
 ## Default values
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_file="${script_dir}/config/assembly_mlst.config"
 
 output_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_results/Genomes"
 save_folder_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Raw_fastq/Genomes"
 tmp_folder_prefix="/srv/scratch/iai/bachcl/Raw_fastq/Legionella/Genomes"
 work_folder_prefix="/srv/scratch/iai/bachcl/result/Legionella/Genomes"
+
 db_save="true"
 adapters="true"
 deconta="false"
@@ -112,9 +112,10 @@ down_to=1
 momps="false"
 snpeff_other="false"
 zoom="none"
+
 metadata_user_prefix="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/Input_analysis_nextflow/Metadata_"
 partition_folder="/srv/net/cluqumngs/TMP_IAI/04_CNR_Legionella/NGS_Database/ReporTree"
-analyse_id=$(date +%Y%m%d)
+
 
 ## User values
 ### Check args presence
@@ -230,6 +231,11 @@ while [ $# -gt 0 ]; do
             fi
             shift 2
             ;;
+            
+        --resume)
+            resume=" -resume"
+            shift 1
+            ;;
 
         -h|--help)
             display_help
@@ -309,7 +315,7 @@ done
 
 ### Check FASTQs against metadata
 valid_ids=$(tail -n +2 "${metadata_user}" | cut -f1 | tr '\n' '|' | sed 's/|$//')
-find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.fastq.gz" \) | while read -r f; do
+while read -r f; do
     base=$(basename "${f}")
     sample=${base%%_*}
 
@@ -317,7 +323,7 @@ find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.
         echo "ERROR: FASTQ sample '${sample}' not found in Metadata file" >&2
         exit 1
     }
-done
+done < <(find "${input_folder}" -maxdepth 1 -type f \( -name "*_R1.fastq" -o -name "*_R1.fastq.gz" \))
 
 
 ################################################################################
@@ -373,7 +379,7 @@ echo ""
 if ! k5start -U -f /home/chu-lyon.fr/ginevrach/login.kt \
     -- "${nf_exec}" \
     -C "${config_file}" \
-    run "${pipeline_file}" \
+    run "${pipeline_file}""${resume}" \
     --suffix "${sequencing_id}" \
     --input_dir "${tmp_folder}" \
     -w "${work_folder}" \
@@ -436,6 +442,17 @@ if [[ "${db_save}" == "true" || "${db_save}" == "True" ]]; then
     done
     
     echo ""
+
+    ### For manual use by biologists (ReporTree DB + all nwk trees)
+    mkdir -p "${partition_folder}/cgMLST" 2>/dev/null
+    rsync -avcQ \
+        --exclude='*/' \
+        "${partition_folder}/" "${copy_folder_db}/cgMLST/"
+    rsync -avcQ \
+        --include='*.nwk' \
+        --exclude='*' \
+        "${result_folder}/dev/Rsync/" "${copy_folder_db}/cgMLST/"
+    chmod -R 777 "${copy_folder_db}/cgMLST" 2>/dev/null
 fi
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
