@@ -17,4 +17,6 @@ workflow {
     println "analyse_id=${params.analyse_ID}"
     println "partition=${params.rep_partition}"
     println "metadata=${params.rep_metadata}"
+    println "db_save=${params.db_save}"
+    println "copy_dir=${params.copy_dir_prefix}"
 }

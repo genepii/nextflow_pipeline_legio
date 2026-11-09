@@ -144,6 +144,8 @@ result_folder="${paths[5]}"
 analyse_id="${paths[6]}"
 partition_folder="${paths[7]}"
 metadata_user="${paths[8]}"
+db_save="${paths[9]}"
+copy_folder_db="${paths[10]}"
 
 tmp_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/data
 work_folder=${TMPDIR}/${ngsweb_id}/${analyse_id}_Assembly-MLST/work
@@ -284,24 +286,37 @@ echo
 chmod -R 777 "${output_folder}" || true
 
 ## Backup and replace changed files only (ReporTree DB)
-timestamp=$(date +"%Y%m%d-%H%M")
-shopt -s nullglob
-for src in "${result_folder}"/dev/Rsync/*.tsv; do
-    [[ -s "${src}" ]] || continue
-    dst="${partition_folder}/$(basename "${src}")"
+if [[ "${db_save}" == "true" || "${db_save}" == "True" ]]; then
+    timestamp=$(date +"%Y%m%d-%H%M")
+    shopt -s nullglob
+    for src in "${result_folder}"/dev/Rsync/*.tsv; do
+        [[ -s "${src}" ]] || continue
+        dst="${partition_folder}/$(basename "${src}")"
 
-    [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
+        [[ -f "${dst}" ]] && cmp -s "${src}" "${dst}" && continue
 
-    if [[ -f "${dst}" ]]; then
-        mkdir -p "${partition_folder}/OLD/${timestamp}"
-        mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
-        chmod -R 777 "${partition_folder}/OLD/${timestamp}" || true
-    fi
+        if [[ -f "${dst}" ]]; then
+            mkdir -p "${partition_folder}/OLD/${timestamp}"
+            mv "${dst}" "${partition_folder}/OLD/${timestamp}/"
+            chmod -R 777 "${partition_folder}/OLD/${timestamp}" || true
+        fi
 
-    cp "${src}" "${dst}"
-    chmod -R 777 "${dst}" || true
-done
-echo ""
+        cp "${src}" "${dst}"
+        chmod -R 777 "${dst}" || true
+    done
+    echo ""
+
+    ### For manual use by biologists (ReporTree DB + all nwk trees)
+    mkdir -p "${copy_folder_db}/cgMLST" || true
+    rsync -avcQ \
+        --exclude='*/' \
+        "${partition_folder}/" "${copy_folder_db}/cgMLST/"
+    rsync -avcQ \
+        --include='*.nwk' \
+        --exclude='*' \
+        "${result_folder}/dev/Rsync/" "${copy_folder_db}/cgMLST/"
+    chmod -R 777 "${copy_folder_db}/cgMLST" || true
+fi
 
 echo "--- FINISHED - to SAVE FOLDER ---------------------------------------------------------------------------------------------"
 echo "End: $(date '+%d/%m/%Y %H:%M:%S')"

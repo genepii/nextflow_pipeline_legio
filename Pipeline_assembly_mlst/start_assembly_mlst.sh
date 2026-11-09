@@ -444,7 +444,7 @@ if [[ "${db_save}" == "true" || "${db_save}" == "True" ]]; then
     echo ""
 
     ### For manual use by biologists (ReporTree DB + all nwk trees)
-    mkdir -p "${partition_folder}/cgMLST" 2>/dev/null
+    mkdir -p "${copy_folder_db}/cgMLST" 2>/dev/null
     rsync -avcQ \
         --exclude='*/' \
         "${partition_folder}/" "${copy_folder_db}/cgMLST/"

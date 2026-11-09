@@ -94,6 +94,7 @@ There are also labels to specify CPU usage, memory usage and the number of forks
 | `save_dir_prefix` | Base directory used to store raw FASTQ files from the sequencing run. The final save directory is automatically built as `${save_dir_prefix}/${suffix}` (PATH). |
 | `tmp_dir_prefix` | Base directory used for temporary files generated during execution. The final temporary directory is automatically built as `${tmp_dir_prefix}/${suffix}` (PATH). |
 | `work_dir_prefix` | Base directory used for Nextflow work files and intermediate results. The final work directory is automatically built as `${work_dir_prefix}/${suffix}/${analyse_ID}_Assembly-MLST` (PATH). |
+| `copy_dir_prefix` | Base directory used to save a copy of the NWK trees and the ReporTree database. The final work directory is automatically built as `${copy_dir_prefix}/cgMLST` (PATH). |
 | `paired_end` | Enables paired-end analysis (`true`) or single-end analysis (`false`) (true/false). |
 | `adapters` | Enables adapter trimming using Fastp (true/false). |
 | `decontamination` | Enables host-read removal using BBWrap (true/false). |
@@ -109,6 +110,7 @@ There are also labels to specify CPU usage, memory usage and the number of forks
 | Parameter | Description |
 |-----------|-------------|
 | `min_raw_seq` | Minimum number of raw reads required to be considered acceptable for the analysis (INT). |
+| `db_save` | Save the new cgMLSTs to the database (true/false). |
 
 ---
 
