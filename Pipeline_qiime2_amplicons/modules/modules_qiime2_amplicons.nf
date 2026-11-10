@@ -1062,9 +1062,9 @@ process KRONA_TO_HTML {
     label 'maxforks_mid', 'mem_mid', 'cpus_mid', 'qiime'
     
     publishDir "${params.result}", mode: 'copy',
-        pattern: "*filtKrona*"
-    publishDir "${params.result}/2_Classification/init", mode: 'copy',
         pattern: "*initKrona*"
+    publishDir "${params.result}/2_Classification", mode: 'copy',
+        pattern: "*filtKrona*"
 
     input:
         val(results_type)

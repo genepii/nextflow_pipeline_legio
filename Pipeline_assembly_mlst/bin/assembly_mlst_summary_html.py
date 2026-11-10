@@ -625,9 +625,6 @@ These highlights are intended as visual quality-control indicators and should be
 {% if value|string|lower in ["", "nan", "na", "n/a", "<na>", "null"] and s == "L_pneumophila" %}
     <span class="highlight">{{ display_value }}</span>
 
-{% elif value|string|lower in ["", "nan", "na", "n/a", "<na>", "null"] %}
-    <span style="color:#e5e5e5;">{{ display_value }}</span>
-
 {% elif value == "Contamination" or value == "Potential new spp." %}
     <span class="highlight">{{ display_value }}</span>
 

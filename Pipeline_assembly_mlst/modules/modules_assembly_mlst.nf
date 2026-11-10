@@ -1324,7 +1324,10 @@ process MERGE_EXTRACT_ALLELES {
 */
 process CHEWBBACA_GRAPETREE {
     label 'maxforks_high', 'mem_low', 'grapetree'
+
     publishDir "${params.result}/8_Clustering/${strain}_${nb}genes_GrapeTree", mode: 'copy'
+    publishDir "${params.result}/dev/Rsync", mode: 'copy',
+        pattern: "*.nwk"
 
     input:
         tuple val(strain),
@@ -1507,10 +1510,10 @@ process MERGE_METADATA {
         tuple val(strain), 
             path(metadata_elgato), 
             val(samples_list)
+        path(extracted_alleles)
 
     output:
-        tuple val(strain), 
-            path("${strain}_MLSTmetadata.tsv")
+        tuple val(strain), path("${strain}_MLSTmetadata.tsv")
 
     script:
     def list_modified = samples_list.collect { "'${it}'" }.join(', ')
@@ -1522,27 +1525,37 @@ process MERGE_METADATA {
 
     samples = [${list_modified}]
 
-    user = pd.read_csv("${params.rep_metadata}", sep="\\t", dtype=str).fillna("NA")
-    user = user[user.ID.isin(samples)]
+    def read_tsv(file):
+        return pd.read_csv(file, sep="\\t", dtype=str).fillna("NA")
+
+    user = read_tsv("${params.rep_metadata}")
+    user = user[user["ID"].isin(samples)]
 
     if "${strain}" == "Lp":
-        elgato = pd.read_csv("${metadata_elgato}", sep="\\t", dtype=str)
-        elgato = elgato[["Sample_ID", "ST"]].rename(columns={"Sample_ID": "ID"})
-        metadata = elgato.merge(user, on="ID", how="left").fillna("NA")
+        elgato = read_tsv("${metadata_elgato}")[["Sample_ID", "ST"]]
+        metadata = elgato.rename(columns={"Sample_ID": "ID"}).merge(
+            user, on="ID", how="left"
+        )
     else:
         metadata = user
 
+    alleles = read_tsv("${extracted_alleles}")
+    alleles = alleles[alleles["Sample_ID"].isin(samples)].rename(
+        columns={"Sample_ID": "ID"}
+    )
+    metadata = metadata.merge(alleles, on="ID", how="left")
+
     previous = "${params.rep_partition}/${strain}_MLSTmetadata.tsv"
     if os.path.exists(previous):
-        old = pd.read_csv(previous, sep="\\t", dtype=str).fillna("NA")
-        metadata = pd.concat([old, metadata]).drop_duplicates("ID", keep="last")
+        metadata = pd.concat(
+            [read_tsv(previous), metadata]
+        ).drop_duplicates("ID", keep="last")
+
+    metadata = metadata[["ID"] + [c for c in metadata.columns if c != "ID"]]
 
     if "ST" not in metadata.columns:
         metadata.insert(1, "ST", "NA")
 
-    metadata = metadata[["ID"] + [c for c in metadata.columns if c != "ID"]]
-
-    metadata = metadata.fillna("NA")
     metadata.to_csv("${strain}_MLSTmetadata.tsv", sep="\\t", index=False)
     EOF
     """
@@ -1559,6 +1572,8 @@ process VISU_REPORTREE {
 
     publishDir "${params.result}/dev/Rsync", mode: 'copy',
         pattern: "*_*genes_partitions.tsv"
+    publishDir "${params.result}/dev/Rsync", mode: 'copy',
+        pattern: "*genes_ReporTree/*.nwk"
     publishDir "${params.result}/8_Clustering", mode: 'copy',
         pattern: "*genes_ReporTree/*"
 

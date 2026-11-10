@@ -616,7 +616,7 @@ workflow {
             tuple(strain, metadata_elgato, samples_id)
         }
 
-    MERGE_METADATA(strain_metadata_samples_ch)
+    MERGE_METADATA(strain_metadata_samples_ch, MERGE_EXTRACT_ALLELES.out)
 
     // ---------------------------
     // GrapeTree
