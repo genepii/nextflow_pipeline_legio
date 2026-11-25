@@ -20,6 +20,7 @@ project/
 ├── docs/               changelogs and documents
 ├── img/                images used for ReadMe
 ├── Pipeline_*/         Nextflow pipelines 
+├── scripts/            one shot scripts
 └── nextflow_25.10.4    Nextflow executable
 ```
 
